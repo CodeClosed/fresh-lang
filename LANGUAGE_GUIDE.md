@@ -1,231 +1,223 @@
-# 📘 Fresh Language Specification & User Guide
+# 📘 Fresh Language User Guide & Tutorial
 
-Welcome to the **Fresh Language Guide**! This document provides a complete guide to writing code in **Fresh**, covering everything from basic syntax, data types, and control flow to advanced features like closures, structs, pattern matching with guards, multi-file module imports, project management, and the standard library.
+Welcome to the **Fresh Language Guide**! Fresh is a modern, statically typed, compiled programming language designed to combine high readability, strong type safety, and fast bytecode execution.
 
----
-
-## 📌 Table of Contents
-
-1. [Source Files & Comments](#1-source-files--comments)
-2. [Data Types & Literals](#2-data-types--literals)
-3. [Variables & Type Annotations](#3-variables--type-annotations)
-4. [Operators & Expression Precedence](#4-operators--expression-precedence)
-5. [Control Flow](#5-control-flow)
-   - [If / Else If / Else](#if--else-if--else)
-   - [While Loops](#while-loops)
-   - [For Loops](#for-loops)
-   - [Break and Continue](#break-and-continue)
-6. [Functions & Closures](#6-functions--closures)
-   - [Named Functions](#named-functions)
-   - [Anonymous Functions (Lambdas)](#anonymous-functions-lambdas)
-   - [Closures & Captured State](#closures--captured-state)
-7. [Structs (Records)](#7-structs-records)
-8. [Arrays & Indexing](#8-arrays--indexing)
-9. [Pattern Matching (`match`)](#9-pattern-matching-match)
-10. [Modules & Imports System](#10-modules--imports-system)
-11. [Developer Tooling & CLI](#11-developer-tooling--cli)
-12. [Standard Library Reference](#12-standard-library-reference)
-13. [Complete Code Examples](#13-complete-code-examples)
+This guide provides a comprehensive, beginner-friendly walkthrough of the language—from writing your first `"Hello, World!"` to advanced patterns like closures, nested structs, and pattern matching with guards.
 
 ---
 
-## 1. Source Files & Comments
+## 📑 Table of Contents
 
-### File Extension
-Fresh source code files use the `.fresh` file extension (e.g., `program.fresh`).
+1. [Hello, World!](#1-hello-world)
+2. [Comments & File Structure](#2-comments--file-structure)
+3. [Data Types & Literals](#3-data-types--literals)
+4. [Variables & Type Inference](#4-variables--type-inference)
+5. [Operators & Precedence](#5-operators--precedence)
+6. [Control Flow: Conditionals & Loops](#6-control-flow-conditionals--loops)
+7. [Functions, Recursion & Higher-Order Functions](#7-functions-recursion--higher-order-functions)
+8. [Closures & State Capture](#8-closures--state-capture)
+9. [Struct Records & Mutation](#9-struct-records--mutation)
+10. [Dynamic Arrays & 2D Matrices](#10-dynamic-arrays--2d-matrices)
+11. [Pattern Matching (`match`) with Guards](#11-pattern-matching-match-with-guards)
+12. [Module Import System](#12-module-import-system)
+13. [Standard Library Reference](#13-standard-library-reference)
+14. [CLI Developer Tooling](#14-cli-developer-tooling)
 
-### Single-Line Comments
-Single-line comments start with `//` and continue until the end of the line:
+---
+
+## 1. Hello, World!
+
+Fresh source code files use the **`.fresh`** file extension. Every program can write statements at the top level or organize code into functions:
+
 ```fresh
-// This is a single-line comment
-let x = 42; // Comment after code
+// hello.fresh
+println("Hello, World from Fresh! ⚡");
 ```
 
-### Multi-Line Comments
-Multi-line comments start with `/*` and end with `*/`. Fresh supports **nested** multi-line comments:
-```fresh
-/* This is a multi-line comment
-   /* Nested comment inside */
-   Back to outer comment */
+Run this file from your terminal:
+
+```bash
+fresh run hello.fresh
 ```
 
 ---
 
-## 2. Data Types & Literals
+## 2. Comments & File Structure
 
-Fresh supports 5 primitive data types and 2 compound data types:
+Fresh supports both single-line and multi-line comments. Multi-line comments can be nested safely:
 
-| Type | Syntax / Literal | Description | Example |
-| :--- | :--- | :--- | :--- |
-| `int` | Integers | 64-bit signed integers | `42`, `-10`, `0` |
-| `float` | Floating-point numbers | 64-bit double precision numbers | `3.14`, `-0.001`, `2.0` |
-| `bool` | Booleans | Logical truth values | `true`, `false` |
-| `string` | Text strings | UTF-8 encoded text literals | `"hello\nworld"` |
-| `nil` | Absence of value | Represents null / empty value | `nil` |
-| `[T]` | Arrays | Homogenous dynamic arrays of type `T` | `[1, 2, 3]`, `["a", "b"]` |
-| `Struct` | Records | User-defined record types | `Point { x: 1.0, y: 2.0 }` |
+```fresh
+// Single-line comment: explain the next line
+let port = 8080;
+
+/* Multi-line block comment:
+   /* Nested comment block */
+   Useful for commenting out large sections of code.
+*/
+```
+
+---
+
+## 3. Data Types & Literals
+
+Fresh features 5 primitive types and 2 compound types:
+
+| Type | Name | Literal Syntax | Description | Example |
+| :--- | :--- | :--- | :--- | :--- |
+| `int` | Integer | `42`, `-10`, `0` | 64-bit signed integer | `let x: int = 100;` |
+| `float` | Float | `3.14`, `-0.5`, `2.0` | 64-bit IEEE 754 double | `let pi: float = 3.14159;` |
+| `bool` | Boolean | `true`, `false` | Logical boolean | `let is_open: bool = true;` |
+| `string` | String | `"..."` | UTF-8 encoded text string | `let s: string = "Fresh";` |
+| `nil` | Nil | `nil` | Represents the absence of a value | `let n = nil;` |
+| `[T]` | Dynamic Array | `[elem1, elem2, ...]` | Homogeneous dynamic list of type `T` | `let arr: [int] = [1, 2, 3];` |
+| `Struct` | Record | `Point { x: 1.0, y: 2.0 }` | User-defined named structure | `let pt = Point { x: 0.0, y: 0.0 };` |
 
 ### String Escape Sequences
-Strings support standard escape sequences:
+Strings support common escape sequences:
 - `\n` — Newline
-- `\t` — Horizontal tab
+- `\t` — Tab
 - `\"` — Double quote
 - `\\` — Backslash
-- `\0` — Null character
 
 ```fresh
-let msg = "Hello,\t\"Fresh\"!\n";
+let greeting = "Line 1\nLine 2 with \"quotes\" and a \ttab";
 ```
 
 ---
 
-## 3. Variables & Type Annotations
+## 4. Variables & Type Inference
 
-### Declaration & Initialization
+### Declaration with `let`
 Variables are declared using the `let` keyword:
 
 ```fresh
-let age = 25;            // Inferred as int
-let pi = 3.14159;        // Inferred as float
-let is_valid = true;     // Inferred as bool
-let greeting = "Hello";  // Inferred as string
+let count = 10;          // Inferred as int
+let price = 19.99;       // Inferred as float
+let is_ready = true;     // Inferred as bool
+let title = "Fresh App"; // Inferred as string
 ```
 
 ### Explicit Type Annotations
-You can optionally specify explicit type annotations using `: Type`:
+You can explicitly declare types for documentation and strict checking:
 
 ```fresh
-let count: int = 100;
-let rate: float = 0.05;
-let active: bool = false;
-let message: string = "Welcome";
-let numbers: [int] = [1, 2, 3];
+let max_retries: int = 5;
+let threshold: float = 0.85;
+let debug_mode: bool = false;
+let user_name: string = "Alice";
 ```
 
-### Variable Reassignment
-Variables in Fresh can be reassigned using the `=` operator:
+### Mutation & Scoping
+Variables can be reassigned within their scope:
 
 ```fresh
-let score = 0;
-score = score + 10;
-score = 25;
+let total = 0;
+total = total + 50;
+
+{
+    // Block scope creates a local scope
+    let inner_val = 100;
+    total = total + inner_val;
+}
+// inner_val is no longer in scope here
 ```
 
 ---
 
-## 4. Operators & Expression Precedence
+## 5. Operators & Precedence
 
-Fresh provides a full suite of arithmetic, comparison, logical, and unary operators:
+Fresh supports standard mathematical, comparison, and boolean logic operators:
 
-### Operator Table
-
-| Category | Operators | Examples |
-| :--- | :--- | :--- |
-| **Arithmetic** | `+`, `-`, `*`, `/`, `%` | `a + b`, `10 % 3` |
-| **Comparison** | `==`, `!=`, `<`, `<=`, `>`, `>=` | `x >= 10`, `name == "Fresh"` |
-| **Logical** | `&&` (AND), `||` (OR), `!` (NOT) | `a && b`, `!is_ready` |
-| **Unary** | `-` (Negation), `!` (Logical Not) | `-5`, `!true` |
-
-### String Concatenation
-The `+` operator automatically performs string concatenation when either operand is a string:
-
+### Arithmetic Operators
 ```fresh
-let greeting = "Hello, " + "World!"; // "Hello, World!"
+let sum  = 10 + 5;   // 15 (Addition)
+let diff = 10 - 5;   // 5  (Subtraction)
+let prod = 10 * 5;   // 50 (Multiplication)
+let quot = 10 / 2;   // 5  (Division)
+let rem  = 10 % 3;   // 1  (Modulo)
+let neg  = -sum;     // -15 (Unary negation)
 ```
 
-### Precedence Hierarchy (Highest to Lowest)
+### Comparison Operators
+```fresh
+let a = 10;
+let b = 20;
 
-1. Primary: Literals, identifiers, parenthesised expressions `(expr)`
-2. Postfix / Access: Calls `foo()`, array indexing `arr[i]`, field access `obj.field`
-3. Unary: `-expr`, `!expr`
-4. Factor: `*`, `/`, `%`
-5. Term: `+`, `-`
-6. Comparison: `<`, `<=`, `>`, `>=`
-7. Equality: `==`, `!=`
-8. Logical AND: `&&`
-9. Logical OR: `||`
-10. Assignment: `=`
+let eq  = (a == b);  // false (Equal)
+let neq = (a != b);  // true  (Not Equal)
+let lt  = (a < b);   // true  (Less Than)
+let lte = (a <= b);  // true  (Less Than or Equal)
+let gt  = (a > b);   // false (Greater Than)
+let gte = (a >= b);  // false (Greater Than or Equal)
+```
+
+### Logical Operators (with Short-Circuiting)
+```fresh
+let cond1 = true && false; // false (Logical AND)
+let cond2 = true || false; // true  (Logical OR)
+let cond3 = !true;         // false (Logical NOT)
+```
 
 ---
 
-## 5. Control Flow
+## 6. Control Flow: Conditionals & Loops
 
-### If / Else If / Else
-Conditional execution based on boolean expressions:
-
+### `if` / `else if` / `else`
 ```fresh
 let score = 85;
 
 if (score >= 90) {
     println("Grade: A");
-} else if (score >= 80) {
-    println("Grade: B");
-} else if (score >= 70) {
-    println("Grade: C");
 } else {
-    println("Grade: F");
-}
-```
-
-### While Loops
-Executes a block repeatedly as long as the condition evaluates to `true`:
-
-```fresh
-let i = 0;
-while (i < 5) {
-    println("Iteration: " + to_string(i));
-    i = i + 1;
-}
-```
-
-### For Loops
-C-style for loops with an initializer, condition, and increment expression:
-
-```fresh
-for (let i = 0; i < 5; i = i + 1) {
-    println("i = " + to_string(i));
-}
-```
-
-### Break and Continue
-- `break`: Immediately exits the nearest enclosing loop.
-- `continue`: Skips the rest of the current loop iteration and proceeds to the increment / condition.
-
-```fresh
-for (let i = 0; i < 10; i = i + 1) {
-    if (i == 3) {
-        continue; // Skip 3
+    if (score >= 80) {
+        println("Grade: B");
+    } else {
+        println("Grade: C");
     }
-    if (i == 7) {
-        break; // Exit loop when reaching 7
-    }
-    println(i);
 }
+```
+
+### `while` Loops
+```fresh
+let counter = 0;
+while (counter < 5) {
+    println("Counter is: " + to_string(counter));
+    counter = counter + 1;
+}
+```
+
+### `for` Loops with `break` and `continue`
+```fresh
+let sum = 0;
+for (let i = 0; i < 20; i = i + 1) {
+    if (i % 2 != 0) {
+        continue; // Skip odd numbers
+    }
+    if (i > 10) {
+        break; // Stop loop once past 10
+    }
+    sum = sum + i;
+}
+println("Sum of even numbers 0..10: " + to_string(sum)); // 30
 ```
 
 ---
 
-## 6. Functions & Closures
+## 7. Functions, Recursion & Higher-Order Functions
 
 ### Named Functions
-Functions are declared using `fn`, parameter type annotations, and an optional return type `-> Type`:
+Functions are declared with `fn`, optional parameter types, and an optional return type `-> ReturnType`:
 
 ```fresh
-fn add(a: int, b: int) -> int {
-    return a + b;
+fn add(x: int, y: int) -> int {
+    return x + y;
 }
 
-fn greet(name: string) {
-    println("Hello, " + name + "!");
-}
-
-let sum = add(10, 20); // 30
-greet("Alice");
+let result = add(15, 27);
+println("Result: " + to_string(result)); // 42
 ```
 
-### Recursive Functions
-Functions can call themselves recursively:
-
+### Recursion
 ```fresh
 fn fibonacci(n: int) -> int {
     if (n <= 1) {
@@ -234,22 +226,23 @@ fn fibonacci(n: int) -> int {
     return fibonacci(n - 1) + fibonacci(n - 2);
 }
 
-let result = fibonacci(10); // 55
+println("Fibonacci(10) = " + to_string(fibonacci(10))); // 55
 ```
 
 ### Anonymous Functions (Lambdas)
-Functions in Fresh are first-class values and can be passed as arguments or assigned to variables:
-
 ```fresh
-let multiply = fn(x: int, y: int) -> int {
-    return x * y;
+let multiply = fn(a: int, b: int) -> int {
+    return a * b;
 };
 
-println(multiply(6, 7)); // 42
+println("6 * 7 = " + to_string(multiply(6, 7))); // 42
 ```
 
-### Closures & Captured State
-Inner functions automatically capture variables from enclosing scopes using upvalues:
+---
+
+## 8. Closures & State Capture
+
+Fresh functions are first-class citizens that can capture variables from their enclosing lexical scope (upvalues):
 
 ```fresh
 fn make_counter(start: int) -> fn {
@@ -261,207 +254,225 @@ fn make_counter(start: int) -> fn {
     return increment;
 }
 
-let counter = make_counter(10);
-println(counter()); // 11
-println(counter()); // 12
+let counter1 = make_counter(0);
+let counter2 = make_counter(100);
+
+println(to_string(counter1())); // 1
+println(to_string(counter1())); // 2
+println(to_string(counter2())); // 101
+println(to_string(counter1())); // 3 (counter1 maintains independent state!)
+```
+
+### Custom Map & Filter with Closures
+```fresh
+fn map_ints(arr: [int], transform: fn) -> [int] {
+    let out: [int] = [];
+    for (let i = 0; i < len(arr); i = i + 1) {
+        push(out, transform(arr[i]));
+    }
+    return out;
+}
+
+let nums = [1, 2, 3, 4, 5];
+let double_fn = fn(n: int) -> int { return n * 2; };
+let doubled = map_ints(nums, double_fn);
+
+println("Doubled: " + to_string(doubled)); // [2, 4, 6, 8, 10]
 ```
 
 ---
 
-## 7. Structs (Records)
+## 9. Struct Records & Mutation
 
-Structs define custom composite data structures with typed fields:
+Structs define typed, named records:
 
 ```fresh
-struct Point {
+struct Vector3 {
     x: float,
-    y: float
+    y: float,
+    z: float
+}
+
+struct Player {
+    name: string,
+    pos: Vector3,
+    health: int
 }
 
 // Instantiation
-let p = Point { x: 3.0, y: 4.0 };
-
-// Field Access
-println(p.x); // 3.0
-println(p.y); // 4.0
-
-// Field Mutation
-p.x = 10.5;
-println(p.x); // 10.5
-```
-
----
-
-## 8. Arrays & Indexing
-
-Arrays in Fresh are dynamic, homogenous collections of elements:
-
-```fresh
-let numbers = [10, 20, 30, 40];
-
-// Indexing
-println(numbers[0]); // 10
-
-// Array Mutation
-numbers[1] = 99;
-println(numbers[1]); // 99
-
-// Array Length
-println(len(numbers)); // 4
-```
-
----
-
-## 9. Pattern Matching (`match`)
-
-Fresh provides powerful pattern matching supporting literal matching, variable bindings, wildcards (`_`), and conditional `if` guard clauses:
-
-```fresh
-let val = 42;
-
-let description = match val {
-    0 => "Zero",
-    1 => "One",
-    v if v > 10 && v < 50 => "Between 10 and 50",
-    _ => "Other number"
+let p1 = Player {
+    name: "Hero",
+    pos: Vector3 { x: 0.0, y: 10.0, z: 0.0 },
+    health: 100
 };
 
-println(description); // "Between 10 and 50"
+// Access fields
+println("Player " + p1.name + " at y=" + to_string(p1.pos.y));
+
+// In-place field mutation
+p1.pos.x = 25.5;
+p1.health = p1.health - 20;
+
+println("Updated HP: " + to_string(p1.health)); // 80
 ```
 
 ---
 
-## 10. Modules & Imports System
+## 10. Dynamic Arrays & 2D Matrices
 
-Fresh supports modular programming across multiple source files.
-
-### Importing Other Files
-Use the `import` statement to include definitions from another `.fresh` file:
+Arrays are dynamically sized and indexed using `[index]` (0-based):
 
 ```fresh
-// In math_utils.fresh:
+let fruits: [string] = ["apple", "banana"];
+
+// push adds to the end
+push(fruits, "cherry");
+println("Length: " + to_string(len(fruits))); // 3
+
+// pop removes from the end
+let last_fruit = pop(fruits); // "cherry"
+println("Popped: " + last_fruit);
+
+// Index read and write
+fruits[0] = "avocado";
+println("First fruit: " + fruits[0]); // avocado
+```
+
+### Multi-Dimensional Matrices
+```fresh
+let matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+];
+
+// Read row 1, col 2
+println("Element at (1, 2): " + to_string(matrix[1][2])); // 6
+
+// Mutate cell (1, 1)
+matrix[1][1] = 99;
+println("Modified center: " + to_string(matrix[1][1])); // 99
+```
+
+---
+
+## 11. Pattern Matching (`match`) with Guards
+
+Fresh supports expressive pattern matching with literal values, variable bindings, wildcard defaults (`_`), and conditional `if` guard expressions:
+
+```fresh
+fn classify_http(code: int, authenticated: bool) -> string {
+    return match code {
+        200 if authenticated => "200 OK (Authorized User)",
+        200 if !authenticated => "200 OK (Guest)",
+        401 => "401 Unauthorized",
+        404 => "404 Not Found",
+        err if err >= 500 && err < 600 => "Server Error (" + to_string(err) + ")",
+        _ => "Unknown HTTP Code"
+    };
+}
+
+println(classify_http(200, true));  // 200 OK (Authorized User)
+println(classify_http(200, false)); // 200 OK (Guest)
+println(classify_http(404, false)); // 404 Not Found
+println(classify_http(503, true));  // Server Error (503)
+println(classify_http(302, false)); // Unknown HTTP Code
+```
+
+---
+
+## 12. Module Import System
+
+Organize large programs cleanly across multiple `.fresh` source files:
+
+### Defining a Module (`math_utils.fresh`)
+```fresh
+// math_utils.fresh
 fn square(x: int) -> int {
     return x * x;
 }
 
-// In main.fresh:
+fn cube(x: int) -> int {
+    return x * x * x;
+}
+```
+
+### Importing into Another File (`main.fresh`)
+```fresh
+// main.fresh
 import "math_utils.fresh";
 
-println(square(7)); // 49
+let sq = square(6);
+let cb = cube(3);
+
+println("6 squared: " + to_string(sq)); // 36
+println("3 cubed: " + to_string(cb));   // 27
 ```
 
-### Identifier Import Syntax
-```fresh
-import math_utils; // Resolves math_utils.fresh in current or base directory
-```
-
-### Safety & Circular Import Detection
-The Fresh `ModuleLoader` automatically caches imported modules to avoid duplicate evaluations and detects circular import loops (e.g. `a.fresh -> b.fresh -> a.fresh`), halting with diagnostic error `[E4001]`:
-```text
-error[E4001]: Circular module dependency detected: a.fresh -> b.fresh -> a.fresh
-```
+Fresh automatically resolves relative paths, caches duplicate imports, and detects and prevents circular imports (`[E4001]`).
 
 ---
 
-## 11. Developer Tooling & CLI
+## 13. Standard Library Reference
 
-Fresh provides comprehensive command-line tooling for building, testing, checking, and formatting code:
+### Console Output
+- `println(val: any)` — Prints value followed by a newline.
+- `print(val: any)` — Prints value without trailing newline.
 
-| Command | Description | Example |
-| :--- | :--- | :--- |
-| `fresh run <file>` | Run a Fresh source file on the VM | `fresh run main.fresh` |
-| `fresh run <file> --emit-c` | Transpile source code to standalone C | `fresh run main.fresh --emit-c` |
-| `fresh check <file>` | Static analysis (scoping, types) without execution | `fresh check main.fresh` |
-| `fresh fmt <file> [--check]` | Format source code deterministically | `fresh fmt main.fresh` |
-| `fresh init <name>` | Scaffold a new Fresh project with `fresh.toml` | `fresh init myapp` |
-| `fresh build [path]` | Build project to native C/binary | `fresh build myapp` |
-| `fresh test [dir]` | Run automated test suite | `fresh test` |
-| `fresh repl` | Start interactive Read-Eval-Print Loop | `fresh repl` |
+### Inspection & Conversions
+- `to_string(val: any) -> string` — Converts integer, float, boolean, or struct to string.
+- `type(val: any) -> string` — Returns runtime type name (`"int"`, `"float"`, `"string"`, `"bool"`).
+- `len(arr: [T] | str: string) -> int` — Returns number of elements in array or string length.
 
----
+### Dynamic Array Operations
+- `push(arr: [T], item: T)` — Appends item to array end.
+- `pop(arr: [T]) -> T` — Removes and returns the last element.
 
-## 12. Standard Library Reference
+### Math Library
+- `abs(x: float | int) -> float | int` — Absolute value.
+- `sqrt(x: float) -> float` — Square root.
+- `pow(base: float, exponent: float) -> float` — Power calculation.
+- `min(a: int | float, b: int | float)` — Minimum of two values.
+- `max(a: int | float, b: int | float)` — Maximum of two values.
+- `floor(x: float) -> float` — Floor round down.
+- `ceil(x: float) -> float` — Ceiling round up.
+- `round(x: float) -> float` — Round to nearest integer.
 
-### Built-in I/O & Conversions
-- `println(val)`: Prints a value to stdout with a newline.
-- `print(val)`: Prints a value without a newline.
-- `to_string(val)`: Converts any primitive value to its string representation.
-- `to_int(val)`: Converts float or string to integer.
-- `to_float(val)`: Converts int or string to float.
-- `clock()`: Returns the current system timestamp in seconds (float).
-
-### Array Built-ins
-- `len(arr)`: Returns the number of elements in an array.
-- `push(arr, val)`: Appends an element to the end of the array.
-- `pop(arr)`: Removes and returns the last element.
-
-### File I/O Built-ins
-- `read_file(path)`: Reads the entire contents of a file as a string.
-- `write_file(path, content)`: Writes text content to a file.
-- `file_exists(path)`: Returns `true` if the file exists, `false` otherwise.
-
-### Math Functions (`math_lib`)
-- `sqrt(x)`: Square root.
-- `pow(base, exp)`: Exponentiation.
-- `abs(x)`: Absolute value.
-- `floor(x)`: Round down to integer float.
-- `ceil(x)`: Round up to integer float.
-- `sin(x)`, `cos(x)`, `tan(x)`: Trigonometric functions.
+### System & File I/O
+- `clock() -> float` — High-resolution timestamp in seconds.
+- `write_file(path: string, content: string)` — Writes UTF-8 text to disk file.
+- `read_file(path: string) -> string` — Reads entire file content as string.
+- `file_exists(path: string) -> bool` — Checks if file exists on disk.
 
 ---
 
-## 13. Complete Code Examples
+## 14. CLI Developer Tooling
 
-### Example 1: Modular Math Program
-```fresh
-// math.fresh
-fn factorial(n: int) -> int {
-    if (n <= 1) {
-        return 1;
-    }
-    return n * factorial(n - 1);
-}
-
-// main.fresh
-import "math.fresh";
-
-println("Factorial of 5: " + to_string(factorial(5)));
+### Run
+```bash
+fresh run my_script.fresh
 ```
 
-### Example 2: In-Place Quicksort Algorithm
-```fresh
-fn swap(arr: [int], i: int, j: int) {
-    let temp = arr[i];
-    arr[i] = arr[j];
-    arr[j] = temp;
-}
+### Type Check (Static Analysis without Execution)
+```bash
+fresh check my_script.fresh
+```
 
-fn partition(arr: [int], low: int, high: int) -> int {
-    let pivot = arr[high];
-    let i = low - 1;
+### Auto-Format Code
+```bash
+fresh fmt my_script.fresh
+# Or check if formatted:
+fresh fmt my_script.fresh --check
+```
 
-    for (let j = low; j < high; j = j + 1) {
-        if (arr[j] <= pivot) {
-            i = i + 1;
-            swap(arr, i, j);
-        }
-    }
-    swap(arr, i + 1, high);
-    return i + 1;
-}
+### Scaffold a New Project
+```bash
+fresh init my_project
+cd my_project
+fresh build
+```
 
-fn quicksort(arr: [int], low: int, high: int) {
-    if (low < high) {
-        let pi = partition(arr, low, high);
-        quicksort(arr, low, pi - 1);
-        quicksort(arr, pi + 1, high);
-    }
-}
-
-let numbers = [64, 34, 25, 12, 22, 11, 90];
-println("Before: " + to_string(numbers));
-
-quicksort(numbers, 0, len(numbers) - 1);
-
-println("After:  " + to_string(numbers));
+### Interactive REPL
+```bash
+fresh repl
 ```

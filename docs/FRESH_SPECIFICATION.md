@@ -1,58 +1,127 @@
-# The Fresh Language Specification (v0.1.0)
-## Normative Reference Specification
+# 📜 The Fresh Language Specification (v0.1.0)
+## Normative Architecture & Language Reference
 
 ---
 
-## 1. Introduction & Scope
+## 1. Introduction & Conformance
 
-This document is the official, normative specification for the **Fresh Programming Language** (version 0.1.0). A conforming Fresh implementation must adhere to all lexical, syntactic, semantic, and runtime specifications defined in this document.
+This document is the official, normative specification for the **Fresh Programming Language** (version 0.1.0). A conforming Fresh implementation must adhere to all lexical, syntactic, semantic, and runtime rules defined in this document.
 
 ---
 
-## 2. Lexical Structure
+## 2. Lexical Grammar
 
-### 2.1 Character Set & Encodings
-Fresh source code is a sequence of Unicode characters encoded in UTF-8. Any malformed UTF-8 byte sequences must be rejected during lexical scanning.
+### 2.1 Character Set & Source Encoding
+Fresh source code is a sequence of Unicode characters encoded in UTF-8. Non-UTF-8 byte sequences must be rejected at scan time.
 
 ### 2.2 Whitespace & Comments
-Whitespace characters (space `\u0020`, tab `\t`, newline `\n`, carriage return `\r`) delimit tokens and are ignored otherwise.
+- **Whitespace**: Spaces (`\u0020`), horizontal tabs (`\t`), newlines (`\n`), and carriage returns (`\r`) delimit tokens and are otherwise discarded.
+- **Line Comments**: Begin with `//` and extend to the end of the line.
+- **Block Comments**: Enclosed within `/*` and `*/`. Block comments may be arbitrarily nested.
 
-Comments:
-- **Line Comments**: Start with `//` and extend to the end of the line.
-- **Block Comments**: Enclosed in `/* ... */` (nested block comments are supported).
+### 2.3 Keywords & Identifiers
+**Keywords** are reserved and cannot be used as variable or function names:
+```text
+let      fn       struct   import   if       else     while    for
+break    continue return   match    true     false    nil
+```
 
-### 2.3 Identifiers & Keywords
-Identifiers start with `[a-zA-Z_]` followed by zero or more `[a-zA-Z0-9_]`.
-
-**Reserved Keywords**:
-`let`, `fn`, `struct`, `import`, `if`, `else`, `while`, `for`, `break`, `continue`, `return`, `match`, `true`, `false`, `nil`, `and`, `or`, `not`
+**Identifiers** match the regular expression:
+```regex
+[a-zA-Z_][a-zA-Z0-9_]*
+```
 
 ### 2.4 Literals
-- **Integers**: `[0-9]+` representing 64-bit signed integers.
-- **Floats**: `[0-9]+\.[0-9]+` representing 64-bit IEEE 754 double precision floats.
-- **Booleans**: `true`, `false`.
-- **Nil**: `nil`.
-- **Strings**: Double-quoted sequences `"..."` supporting escape sequences `\\`, `\"`, `\n`, `\t`, `\r`.
+- **Integer Literals**: Decimal sequences `[0-9]+` representing signed 64-bit integers.
+- **Float Literals**: Decimal floating-point sequences `[0-9]+\.[0-9]+` conforming to IEEE 754 double precision.
+- **Boolean Literals**: `true` and `false`.
+- **Nil Literal**: `nil`.
+- **String Literals**: Double-quoted sequences `"..."` supporting escape sequences:
+  - `\n` — Line Feed (U+000A)
+  - `\t` — Horizontal Tab (U+0009)
+  - `\"` — Double Quote (U+0022)
+  - `\\` — Backslash (U+005C)
+  - `\0` — Null Character (U+0000)
 
 ---
 
-## 3. Grammar & Concrete Syntax (EBNF)
+## 3. Syntactic Grammar (EBNF)
 
 ```ebnf
 Program        ::= Statement* EOF
-Statement      ::= VarDecl | FnDecl | StructDecl | ImportStmt | IfStmt | WhileStmt | ForStmt | ReturnStmt | BreakStmt | ContinueStmt | ExprStmt | Block
-VarDecl        ::= "let" IDENTIFIER (":" TypeAnnotation)? ("=" Expr)? ";"
-FnDecl         ::= "fn" IDENTIFIER "(" ParamList? ")" ("->" TypeAnnotation)? Block
-StructDecl     ::= "struct" IDENTIFIER "{" FieldList? "}"
-ImportStmt     ::= "import" (STRING_LIT | IDENTIFIER) ";"
-IfStmt         ::= "if" "(" Expr ")" Block ("else" (IfStmt | Block))?
+
+Statement      ::= VarDecl
+                 | FnDecl
+                 | StructDecl
+                 | ImportStmt
+                 | IfStmt
+                 | WhileStmt
+                 | ForStmt
+                 | ReturnStmt
+                 | BreakStmt
+                 | ContinueStmt
+                 | ExprStmt
+                 | Block
+
+VarDecl        ::= "let" IDENTIFIER ( ":" TypeAnnotation )? ( "=" Expr )? ";"
+FnDecl         ::= "fn" IDENTIFIER "(" ParamList? ")" ( "->" TypeAnnotation )? Block
+StructDecl     ::= "struct" IDENTIFIER "{" ( StructField ( "," StructField )* ","? )? "}"
+StructField    ::= IDENTIFIER ":" TypeAnnotation
+ImportStmt     ::= "import" ( STRING_LIT | IDENTIFIER ) ";"
+
+IfStmt         ::= "if" "(" Expr ")" Block ( "else" ( IfStmt | Block ) )?
 WhileStmt      ::= "while" "(" Expr ")" Block
-ForStmt        ::= "for" "(" VarDecl? Expr? ";" Expr? ")" Block
+ForStmt        ::= "for" "(" ( VarDecl | ExprStmt | ";" ) Expr? ";" Expr? ")" Block
 ReturnStmt     ::= "return" Expr? ";"
 BreakStmt      ::= "break" ";"
 ContinueStmt   ::= "continue" ";"
 ExprStmt       ::= Expr ";"
 Block          ::= "{" Statement* "}"
+
+ParamList      ::= Parameter ( "," Parameter )*
+Parameter      ::= IDENTIFIER ( ":" TypeAnnotation )?
+
+TypeAnnotation ::= "int" | "float" | "bool" | "string" | "fn" | "[" TypeAnnotation "]" | IDENTIFIER
+
+Expr           ::= Assignment
+Assignment     ::= ( Primary "." IDENTIFIER "=" Expr )
+                 | ( Primary "[" Expr "]" "=" Expr )
+                 | ( IDENTIFIER "=" Expr )
+                 | LogicalOr
+
+LogicalOr      ::= LogicalAnd ( "||" LogicalAnd )*
+LogicalAnd     ::= Equality ( "&&" Equality )*
+Equality       ::= Relational ( ( "==" | "!=" ) Relational )*
+Relational     ::= Additive ( ( "<" | "<=" | ">" | ">=" ) Additive )*
+Additive       ::= Multiplicative ( ( "+" | "-" ) Multiplicative )*
+Multiplicative ::= Unary ( ( "*" | "/" | "%" ) Unary )*
+Unary          ::= ( "!" | "-" ) Unary | Call
+
+Call           ::= Primary ( "(" ArgList? ")" | "." IDENTIFIER | "[" Expr "]" )*
+ArgList        ::= Expr ( "," Expr )*
+
+Primary        ::= INT_LIT
+                 | FLOAT_LIT
+                 | STRING_LIT
+                 | "true" | "false" | "nil"
+                 | IDENTIFIER
+                 | "(" Expr ")"
+                 | "[" ( Expr ( "," Expr )* ","? )? "]"
+                 | StructLiteral
+                 | LambdaExpr
+                 | MatchExpr
+
+StructLiteral  ::= IDENTIFIER "{" ( FieldInit ( "," FieldInit )* ","? )? "}"
+FieldInit      ::= IDENTIFIER ":" Expr
+
+LambdaExpr     ::= "fn" "(" ParamList? ")" ( "->" TypeAnnotation )? Block
+
+MatchExpr      ::= "match" Expr "{" ( MatchArm ( "," MatchArm )* ","? )? "}"
+MatchArm       ::= Pattern ( "if" Expr )? "=>" Expr
+Pattern        ::= LiteralPattern | VariablePattern | WildcardPattern
+LiteralPattern ::= INT_LIT | FLOAT_LIT | STRING_LIT | "true" | "false" | "nil"
+VariablePattern::= IDENTIFIER
+WildcardPattern::= "_"
 ```
 
 ---
@@ -60,121 +129,51 @@ Block          ::= "{" Statement* "}"
 ## 4. Operator Precedence & Associativity
 
 | Precedence | Operator | Description | Associativity |
-|---|---|---|---|
-| 1 | `=` | Assignment | Right-to-left |
-| 2 | `or` | Logical OR | Left-to-right (short-circuit) |
-| 3 | `and` | Logical AND | Left-to-right (short-circuit) |
-| 4 | `==`, `!=` | Equality | Left-to-right |
-| 5 | `<`, `<=`, `>`, `>=` | Relational | Left-to-right |
-| 6 | `+`, `-` | Additive, String Concatenation | Left-to-right |
-| 7 | `*`, `/`, `%` | Multiplicative | Left-to-right |
-| 8 | `not`, `-` (unary) | Logical NOT, Negation | Right-to-left |
-| 9 | `()`, `[]`, `.field` | Function Call, Indexing, Field Access | Left-to-right |
+| :---: | :--- | :--- | :---: |
+| **1 (Lowest)** | `=` | Variable / Field / Index Assignment | Right-to-Left |
+| **2** | `\|\|` | Logical OR (Short-Circuit) | Left-to-Right |
+| **3** | `&&` | Logical AND (Short-Circuit) | Left-to-Right |
+| **4** | `==`, `!=` | Value Equality / Inequality | Left-to-Right |
+| **5** | `<`, `<=`, `>`, `>=` | Relational Ordering | Left-to-Right |
+| **6** | `+`, `-` | Addition, Subtraction, String Concatenation | Left-to-Right |
+| **7** | `*`, `/`, `%` | Multiplication, Division, Modulo | Left-to-Right |
+| **8** | `!`, `-` (unary) | Logical NOT, Arithmetic Negation | Right-to-Left |
+| **9 (Highest)**| `()`, `[]`, `.field` | Function Invocation, Indexing, Member Access | Left-to-Right |
 
 ---
 
-## 5. Type System & Inference
+## 5. Type System & Operational Semantics
 
-Fresh uses strict static typing with local type inference:
-- **`int`**: 64-bit signed two's complement integer.
-- **`float`**: 64-bit IEEE 754 floating-point.
-- **`bool`**: Boolean value (`true` or `false`).
-- **`string`**: Immutable UTF-8 string.
-- **`[T]`**: Uniform dynamically sized list/array of type `T`.
-- **Structs**: User-defined compound types with named typed fields.
-- **Functions**: `fn(T1, T2) -> R` first-class function signatures.
-- **`nil`**: Null unit value.
+Fresh uses strong static typing with local type inference:
+
+- **Type Promotion**: In binary numeric expressions combining `int` and `float`, the `int` operand is automatically widened to `float`.
+- **String Concatenation**: The `+` operator over two `string` operands creates a new string containing their concatenation.
+- **Truthiness**: Only boolean `false` and `nil` evaluate to falsey in boolean conditions (`if`, `while`, `&&`, `||`, guards). All other values are truthy.
+- **Closures & Upvalues**: Functions capturing local variables from an enclosing activation frame create heap-allocated upvalues that outlive the enclosing frame's termination.
+- **Memory Reclamation**: Managed automatically via mark-and-sweep garbage collection tracing all call frames, operand stacks, globals, and upvalue chains.
 
 ---
 
-## 6. Closures & Upvalues
+## 6. Standard Library Builtins
 
-Functions capture enclosing lexical variables via upvalues. Upvalues reference heap-allocated cells that remain valid beyond the lifetime of the enclosing activation frame.
-
-```fresh
-fn make_counter() -> fn {
-    let count = 0;
-    fn inc() -> int {
-        count = count + 1;
-        return count;
-    }
-    return inc;
-}
-let counter = make_counter();
-println(counter()); // 1
-println(counter()); // 2
-```
-
----
-
-## 7. Pattern Matching
-
-The `match` expression evaluates a subject against sequential pattern branches:
-- **Literal Pattern**: `42 => ...`
-- **Variable Pattern**: `x => ...` (binds the subject value to `x`)
-- **Wildcard Pattern**: `_ => ...` (matches any value)
-- **Guard Clause**: `v if v > 10 => ...` (conditional filter)
-
-```fresh
-let val = 42;
-let category = match val {
-    v if v > 100 => "big",
-    v if v > 10 => "medium",
-    _ => "small",
-};
-println(category);
-```
-
----
-
-## 8. Runtime Error Semantics
-
-Conforming runtimes must produce structured runtime errors:
-1. **Division by Zero (`[E5001]`)**: Attempting integer or float division/modulo by zero.
-2. **Index Out of Bounds (`[E5002]`)**: Indexing arrays or strings beyond `[0, len - 1]`.
-3. **Stack Overflow (`[E5003]`)**: Call frame stack exceeding configured threshold.
-4. **Invalid Field Access (`[E5004]`)**: Accessing a struct field that does not exist.
-
----
-
-## 9. Backend Capability Matrix
-
-| Feature | VM Backend | Native C Backend | Parity Status |
-|---|---|---|---|
-| Primitive Types (`int`, `float`, `bool`, `string`) | Supported | Supported | Verified 1:1 |
-| Arithmetic & Logical Operators | Supported | Supported | Verified 1:1 |
-| Structs & Field Getters/Setters | Supported | Supported | Verified 1:1 |
-| Functions & Recursion | Supported | Supported | Verified 1:1 |
-| While & For Loops, Branching | Supported | Supported | Verified 1:1 |
-| Closures & Upvalues | Supported | Explicit Rejection `[E3001]` | Specified |
-| Pattern Matching (`match`) | Supported | Explicit Rejection `[E3001]` | Specified |
-
----
-
-## 10. Standard Library Specification
-
-### Built-in Functions
-
-- **`println(val: any) -> nil`**: Prints value representation to standard output followed by a newline.
-- **`print(val: any) -> nil`**: Prints value representation without a trailing newline.
-- **`to_string(val: any) -> string`**: Converts any primitive, struct, or array into its canonical string representation.
-- **`type(val: any) -> string`**: Returns the runtime type name (`"int"`, `"float"`, `"bool"`, `"string"`, `"array"`, `"struct"`, `"fn"`, `"nil"`).
-- **`len(val: [T] | string) -> int`**: Returns element count for arrays or byte/character length for strings.
-- **`push(arr: [T], val: T) -> nil`**: Appends an element to the end of a dynamic array.
-- **`pop(arr: [T]) -> T`**: Removes and returns the last element of a dynamic array.
-- **`clock() -> float`**: Returns high-resolution monotonic timestamp in seconds.
-- **`read_file(path: string) -> string`**: Reads text file contents as UTF-8 string.
-- **`write_file(path: string, content: string) -> nil`**: Writes UTF-8 string to specified filepath.
-- **`file_exists(path: string) -> bool`**: Returns whether the specified file exists on disk.
-
-### Standard Math Module (`fresh.stdlib.math_lib`)
-
-- **`abs(x: int | float) -> int | float`**: Absolute value.
-- **`sqrt(x: float) -> float`**: Square root.
-- **`pow(base: float, exp: float) -> float`**: Power / exponentiation.
-- **`min(a: int | float, b: int | float) -> int | float`**: Minimum of two numbers.
-- **`max(a: int | float, b: int | float) -> int | float`**: Maximum of two numbers.
-- **`floor(x: float) -> int`**: Largest integer less than or equal to `x`.
-- **`ceil(x: float) -> int`**: Smallest integer greater than or equal to `x`.
-- **`round(x: float) -> int`**: Nearest integer to `x`.
-
+| Signature | Description |
+| :--- | :--- |
+| `println(val: any) -> nil` | Prints string representation of value to stdout with newline. |
+| `print(val: any) -> nil` | Prints string representation of value to stdout without newline. |
+| `to_string(val: any) -> string` | Converts any value to its canonical string form. |
+| `type(val: any) -> string` | Returns the runtime type name (`"int"`, `"float"`, `"string"`, `"bool"`). |
+| `len(arr: [T] \| str: string) -> int` | Returns array element count or string length. |
+| `push(arr: [T], item: T) -> nil` | Appends element to dynamic array. |
+| `pop(arr: [T]) -> T` | Removes and returns last element from dynamic array. |
+| `abs(x: int \| float) -> int \| float` | Absolute value of number. |
+| `sqrt(x: float) -> float` | Square root of float. |
+| `pow(base: float, exp: float) -> float` | Power / exponentiation. |
+| `min(a: int \| float, b: int \| float)` | Minimum of two numbers. |
+| `max(a: int \| float, b: int \| float)` | Maximum of two numbers. |
+| `floor(x: float) -> float` | Largest integer value less than or equal to `x`. |
+| `ceil(x: float) -> float` | Smallest integer value greater than or equal to `x`. |
+| `round(x: float) -> float` | Float rounded to nearest integer value. |
+| `clock() -> float` | High-resolution monotonic timestamp in seconds. |
+| `write_file(path: string, text: string) -> nil` | Writes UTF-8 text to disk file. |
+| `read_file(path: string) -> string` | Reads text file content as string. |
+| `file_exists(path: string) -> bool` | Checks whether file exists on disk. |

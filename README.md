@@ -1,345 +1,245 @@
-# ⚡ Fresh Programming Language
+# ⚡ The Fresh Programming Language
 
 <p align="center">
-  <b>A modern, statically-typed compiled programming language featuring a stack-based Bytecode Virtual Machine, C Transpiler, Pratt Parser, closures, records, pattern matching, multi-file module imports, project packaging, deterministic code formatting, and mark-and-sweep Garbage Collection.</b>
+  <img src="https://raw.githubusercontent.com/CodeClosed/fresh-lang/main/vscode-extension/icon.png" width="100" height="100" alt="Fresh Logo" />
+</p>
+
+<p align="center">
+  <b>A modern, statically-typed compiled language featuring a Pratt parser, optimizing bytecode compiler, stack-based Virtual Machine with mark-and-sweep GC, native C transpilation, closures, pattern matching, and developer tooling.</b>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python" alt="Python Versions" />
+  <img src="https://img.shields.io/badge/Tests-93%20Passing-brightgreen?logo=pytest" alt="Test Status" />
+  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platforms" />
 </p>
 
 ---
 
-## 📌 Table of Contents
+## 📑 Table of Contents
 
-- [Overview](#-overview)
-- [Key Features](#-key-features)
-- [Architecture Pipeline](#-architecture-pipeline)
-- [Installation & Setup](#-installation--setup)
-- [Command Line Usage](#-command-line-usage)
-  - [Running Scripts (`fresh run`)](#running-a-fresh-script)
-  - [Static Analysis (`fresh check`)](#static-analysis--type-checking)
-  - [Code Formatting (`fresh fmt`)](#code-formatting)
-  - [Project Management (`fresh init` & `fresh build`)](#project-initialization--building)
-  - [Automated Testing (`fresh test`)](#running-tests)
-  - [Interactive REPL (`fresh repl`)](#-interactive-repl)
-- [Compiler Inspection Flags](#-compiler-inspection-flags)
-- [Showcase Examples](#-showcase-examples)
-- [Project Directory Structure](#-project-directory-structure)
-- [Language Guide](#-language-guide)
-- [Project Justification & PROS](#-project-justification--pros)
-- [Academic Architectural Comparison](#-academic-architectural-comparison)
-- [Running Tests](#-running-tests)
-- [License](#-license)
+- [🚀 Quickstart in 30 Seconds](#-quickstart-in-30-seconds)
+- [🌟 Key Highlights & Language Design](#-key-highlights--language-design)
+- [🏗 Architecture & Compiler Pipeline](#-architecture--compiler-pipeline)
+- [💻 Command-Line Interface (CLI)](#-command-line-interface-cli)
+- [🛠 VS Code Integration & 1-Click Execution](#-vs-code-integration--1-click-execution)
+- [🧩 Feature Showcase & Code Examples](#-feature-showcase--code-examples)
+- [📂 Project Directory Structure](#-project-directory-structure)
+- [📚 Documentation Index](#-documentation-index)
+- [🧪 Running the Test Suite](#-running-the-test-suite)
+- [📄 License](#-license)
 
 ---
 
-## 🌟 Overview & Architecture Tiers
+## 🚀 Quickstart in 30 Seconds
 
-**Fresh** is a clean, expressive programming language engineered from scratch in Python 3.11+. It features a single-pass character-by-character scanner, a top-down operator precedence Pratt parser, static type checking with local type inference, an optimizing bytecode compiler, a stack-based Virtual Machine with a `match opcode:` execution loop, an automatic mark-and-sweep Garbage Collector with stress-mode support, a recursive module import resolver with cycle detection (`[E4001]`), and project packaging tools.
+### 1. Installation
+Clone the repository and install dependencies:
 
-### Backend Support Tiers
+```bash
+git clone https://github.com/CodeClosed/fresh-lang.git
+cd fresh-lang
+python -m pip install -e .
+```
 
-Fresh provides two execution backends:
+### 2. Write Your First Fresh Program
+Create a file named `hello.fresh`:
 
-- **Tier 1 (Fresh Bytecode VM - Full Language)**:
-  Executes the full Fresh language specification, including first-class closures with upvalues, recursive pattern matching with guards (`match`), dynamic arrays, user-defined structs, and modules.
-- **Tier 2 (Fresh Native C Backend - Statically Typed Subset)**:
-  Compiles Fresh source code into standalone, clean C99 code for native compilation with `gcc`, `clang`, or `msvc`. Guarantees 1:1 observable behavioral parity for functions, structs, loops, arithmetic, and logic. Unsupported language features (such as closures or match expressions) are detected and rejected before emission with deterministic compile-time diagnostics (`[E3001]`).
+```fresh
+// hello.fresh
+fn greet(name: string) -> string {
+    return "Hello, " + name + "! Welcome to Fresh ⚡";
+}
+
+let message = greet("Developer");
+println(message);
+```
+
+### 3. Run It!
+```bash
+fresh run hello.fresh
+# Or via python module:
+python -m fresh run hello.fresh
+```
+
+**Output:**
+```text
+Hello, Developer! Welcome to Fresh ⚡
+```
 
 ---
 
-## 🔥 Key Features
+## 🌟 Key Highlights & Language Design
 
-- **Lexer & Precise Error Reporting**: Single-pass scanner with exact line and column tracking (`line:col`) and human-friendly source code underline diagnostic error output with standardized error codes (`[E1001]`–`[E4001]`).
-- **Pratt Parser & Recursion Safety**: Handles expression syntax using top-down operator precedence (eliminates left-recursion bugs and supports easy operator addition) paired with recursive descent statement parsing and nested recursion depth limiting.
-- **Static Type Checking & Local Inference**: Type checker enforces strict type rules for binary/unary operations, function call signatures, and struct fields, while inferring variable types automatically on `let` bindings.
-- **Multi-File Module Import System**: Clean `import "module.fresh";` and `import module;` support with relative file resolution, duplicate caching, and circular dependency detection (`[E4001]`).
-- **Project & Package Tooling**: Built-in `fresh init <name>` to scaffold new projects with `fresh.toml` manifests and `fresh build` to compile projects to native executables.
-- **Deterministic Code Formatter**: Built-in `fresh fmt <file> [--check]` providing standardized, idempotent formatting for all Fresh source files.
-- **Bytecode Virtual Machine**: Fast VM executing a custom ~40 opcode instruction set architecture (ISA) with CallFrame stack management and safety bounds checks.
-- **Lexical Closures & Upvalues**: First-class functions that capture variables from enclosing scopes using upvalue descriptors.
-- **User-Defined Struct Records**: Struct declarations with typed fields, instantiation, and property getter/setter opcodes.
-- **Pattern Matching with Guards**: Powerful `match` expressions supporting literal values, variable bindings, wildcards (`_`), and conditional `if` guard clauses.
-- **Mark-and-Sweep Garbage Collector**: Automatic GC that traces stack frames, evaluation stack, globals, and upvalues with adaptive heap growth and configurable stress mode (`FRESH_GC_STRESS=1`).
-- **C Transpiling Backend & Differential Parity**: Transpiles Fresh AST into standalone C code with type-correct `println` dispatch and struct initializers.
-- **Standard Library**: Core built-in functions for console I/O, string/type conversions, math operations, dynamic array manipulation, and File I/O (`read_file`, `write_file`, `file_exists`).
+Fresh merges the expressive readability of modern languages with the predictable performance of a bytecode VM and C native code generator:
+
+- **Static Typing with Local Inference**: Strict compile-time type verification with automatic type inference on `let` bindings.
+- **Top-Down Operator Precedence (Pratt Parser)**: Clean, robust expression parsing with exact precedence levels and recursion bounds.
+- **Visual Rust-Style Diagnostics**: Clear underline markers and error codes (`[E1001]` to `[E4001]`) for syntax and type errors.
+- **First-Class Closures & Upvalues**: Functions capture variables across scopes with state persistence.
+- **Pattern Matching with Guards**: Powerful `match` expressions supporting values, wildcards (`_`), and conditional `if` guard clauses.
+- **User-Defined Records & Structs**: Strongly typed struct records with in-place mutable fields.
+- **Dynamic Arrays & Matrices**: Native `[T]` arrays with `push`, `pop`, `len`, and multi-dimensional indexing.
+- **Mark-and-Sweep Garbage Collection**: Automatic memory management tracing stacks, upvalues, and globals with `FRESH_GC_STRESS=1` allocation mode.
+- **Native C Transpiler**: Compiles Fresh code directly to readable C99 with 1:1 behavioral equivalence for native binary builds (`gcc`, `clang`, `msvc`).
+- **Complete Developer Tooling**: Built-in formatter (`fresh fmt`), package manager (`fresh init`/`fresh build`), type checker (`fresh check`), and REPL (`fresh repl`).
 
 ---
 
-## 🏗 Architecture Pipeline
+## 🏗 Architecture & Compiler Pipeline
+
+Fresh uses a unified multi-stage pipeline:
 
 ```mermaid
 graph TD
-    A["Fresh Source File (.fresh)"] --> B["Scanner / Lexer"]
-    B --> C["Token Stream"]
-    C --> D["Pratt Parser"]
-    D --> E["Abstract Syntax Tree (AST)"]
-    E --> M_LOAD["Module Loader & Cycle Detector"]
-    M_LOAD --> F["Resolver & Scope Checker"]
-    F --> G["Type Checker & Inferrer"]
-    G --> H["Bytecode Compiler"]
-    H --> I["Bytecode Chunk & Constant Pool"]
-    I --> J["Bytecode Optimizer"]
-    J --> K["Virtual Machine (VM + GC)"]
-    K --> L["Output / Execution Result"]
-
-    M_LOAD -.-> M["C Transpiler"]
-    M -.-> N["Native C Code / Binary (GCC)"]
+    A["Source Code (.fresh)"] --> B["Scanner / Lexer"]
+    B -->|"Token Stream"| C["Pratt Parser"]
+    C -->|"Abstract Syntax Tree (AST)"| D["Module Loader & Cycle Checker"]
+    D -->|"Expanded AST"| E["Resolver & Scope Checker"]
+    E -->|"Scoped AST"| F["Type Checker & Inferrer"]
+    
+    F -->|"Typed AST"| G["Bytecode Compiler"]
+    G -->|"Bytecode Chunk"| H["Peephole Optimizer"]
+    H -->|"Optimized Bytecode"| I["Virtual Machine (VM + GC)"]
+    I -->|"Runtime Output"| J["Program Result"]
+    
+    F -.->|"Typed AST"| K["C99 Transpiler"]
+    K -.->|"Native C Source"| L["C Compiler (GCC / Clang)"]
+    L -.->|"Native Binary"| M["Standalone Executable"]
 ```
 
 ---
 
-## ⚙️ Installation & Setup
+## 💻 Command-Line Interface (CLI)
 
-### Prerequisites
+The `fresh` CLI provides an all-in-one developer toolkit:
 
-- **Python 3.11+** installed on your system.
-- Optional: **GCC / Clang** for native C compilation.
+| Command | Usage | Description |
+| :--- | :--- | :--- |
+| **`fresh run <file>`** | `fresh run main.fresh` | Compiles and executes a Fresh script on the Bytecode VM. |
+| **`fresh check <file>`** | `fresh check main.fresh` | Static analysis: checks types and resolves names without running. |
+| **`fresh fmt <file>`** | `fresh fmt main.fresh [--check]` | Formats source files idempotently according to standard Fresh style. |
+| **`fresh init <name>`** | `fresh init my_app` | Scaffolds a new project with directory structure and `fresh.toml`. |
+| **`fresh build [dir]`** | `fresh build .` | Builds the project entrypoint into a standalone native executable. |
+| **`fresh test [dir]`** | `fresh test tests/` | Runs the automated pytest test suite. |
+| **`fresh repl`** | `fresh repl` | Starts an interactive Read-Eval-Print-Loop session. |
 
-### Option 1: Quick Local Run
+### Compiler Inspection Flags
 
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/fresh-lang/fresh.git
-   cd fresh
-   ```
-
-2. **Set `PYTHONPATH` and run**:
-   - **Linux / macOS**:
-     ```bash
-     export PYTHONPATH=src
-     python3 -m fresh --help
-     ```
-   - **Windows (PowerShell)**:
-     ```powershell
-     $env:PYTHONPATH="src"
-     python -m fresh --help
-     ```
-   - **Windows (CMD)**:
-     ```cmd
-     set PYTHONPATH=src
-     python -m fresh --help
-     ```
-
-### Option 2: Editable Package Installation
-
-You can install `fresh` directly into your Python environment as an executable CLI tool:
+Inspect intermediate representations at any phase of compilation:
 
 ```bash
-pip install -e .
-```
+# Print token stream produced by lexical analysis
+fresh run main.fresh --dump-tokens
 
-Now you can invoke `fresh` directly anywhere from your terminal:
-```bash
-fresh --help
+# Print formatted Abstract Syntax Tree
+fresh run main.fresh --dump-ast
+
+# Print disassembled bytecode instructions & constant pool
+fresh run main.fresh --disassemble
+
+# Transpile Fresh AST directly into standalone C99 source code
+fresh run main.fresh --emit-c
 ```
 
 ---
 
-## 💻 Command Line Usage
+## 🛠 VS Code Integration & 1-Click Execution
 
-### Running a Fresh Script
-```bash
-fresh run examples/01_fibonacci.fresh
-```
+The workspace includes ready-to-use VS Code configurations:
 
-### Static Analysis & Type Checking
-Check syntax, scoping, and types without executing bytecode:
-```bash
-fresh check examples/01_fibonacci.fresh
-```
-
-### Code Formatting
-Format Fresh source code deterministically:
-```bash
-# Format file in place
-fresh fmt src/main.fresh
-
-# Check formatting without writing changes (exits 1 if unformatted)
-fresh fmt src/main.fresh --check
-```
-
-### Project Initialization & Building
-```bash
-# Initialize a new Fresh project
-fresh init my_project
-
-# Build the project into native binary/C artifact
-fresh build my_project
-```
-
-### Running Tests
-Discover and run automated test suites:
-```bash
-fresh test
-```
+1. **Press `F5`**: Runs the currently active `.fresh` file in the integrated terminal.
+2. **Press `Ctrl + Shift + B`**: Executes the default build task (`Fresh: Run Active File`).
+3. **Command Palette (`Ctrl + Shift + P` -> `Tasks: Run Task`)**:
+   - `Fresh: Run Active File`
+   - `Fresh: Type Check Active File`
+   - `Fresh: Format Active File`
+   - `Fresh: Run Test Suite`
+4. **Syntax Highlighting & File Icons**: Included in [`vscode-extension/`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/vscode-extension/).
 
 ---
 
-## 💬 Interactive REPL
+## 🧩 Feature Showcase & Code Examples
 
-Fresh includes an interactive Read-Eval-Print Loop (REPL) for quick code testing:
+Explore ready-to-run examples in the [`examples/`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/) directory:
 
-```bash
-fresh repl
-```
-
-**Example REPL session**:
-```fresh
-Fresh Programming Language v0.1.0
-Type 'exit()' or Ctrl+C to quit.
-
-fresh> let name = "Fresh";
-fresh> println("Hello, " + name + "!");
-Hello, Fresh!
-fresh> fn add(a: int, b: int) -> int { return a + b; }
-fresh> add(15, 27)
-42
-fresh> exit
-```
+| Example File | Key Concept Demonstrated |
+| :--- | :--- |
+| [`all_features.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/all_features.fresh) | **Complete Tour**: Primitives, closures, matrices, structs, pattern matching, stdlib, file I/O |
+| [`01_fibonacci.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/01_fibonacci.fresh) | Recursive function calls, conditional returns, arithmetic |
+| [`02_matrix_multiply.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/02_matrix_multiply.fresh) | 2D dynamic arrays, nested loops, matrix multiplication |
+| [`03_quicksort.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/03_quicksort.fresh) | In-place array mutation, indexing, partition algorithm |
+| [`04_closure_counter.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/04_closure_counter.fresh) | Lexical closures, upvalue mutation across multiple function calls |
+| [`05_calculator.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/05_calculator.fresh) | First-class functions, higher-order function dispatch |
+| [`06_inventory.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/06_inventory.fresh) | User-defined structs, field mutations, inventory calculations |
+| [`07_stress_suite.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/07_stress_suite.fresh) | End-to-end stress test across all core language features |
+| [`08_aggressive_suite.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/08_aggressive_suite.fresh) | Deep recursion (Ackermann), map/filter higher-order lambdas, pattern guards |
 
 ---
 
-## 🔍 Compiler Inspection Flags
+## 📂 Project Directory Structure
 
-Fresh provides detailed inspection flags to examine internal compiler stages:
-
-### 1. Print Lexer Tokens (`--dump-tokens`)
-```bash
-fresh run examples/01_fibonacci.fresh --dump-tokens
-```
-
-### 2. Print Abstract Syntax Tree (`--dump-ast`)
-```bash
-fresh run examples/01_fibonacci.fresh --dump-ast
-```
-
-### 3. Print Disassembled Bytecode (`--disassemble`)
-```bash
-fresh run examples/01_fibonacci.fresh --disassemble
-```
-
-### 4. Transpile to Standalone C Code (`--emit-c`)
-```bash
-fresh run examples/01_fibonacci.fresh --emit-c
-```
-
----
-
-## 📂 Showcase Examples
-
-The repository includes comprehensive showcase programs located in the [`examples/`](examples/) directory:
-
-1. **`01_fibonacci.fresh`**: Demonstrates recursive & iterative Fibonacci calculations alongside stdlib execution timing.
-2. **`02_matrix_multiply.fresh`**: Demonstrates 2D dynamic arrays, nested loops, and matrix multiplication.
-3. **`03_quicksort.fresh`**: Demonstrates array mutation, partitioning, and recursive quicksort.
-4. **`04_closure_counter.fresh`**: Demonstrates first-class functions, anonymous lambdas, and upvalue scope state mutation.
-5. **`05_calculator.fresh`**: Demonstrates pattern matching expressions with conditional guards.
-6. **`06_inventory.fresh`**: Demonstrates struct records and dynamic array built-in operations.
-7. **`07_stress_suite.fresh`**: Complete end-to-end stress test validating all language features.
-
----
-
-## 📁 Project Directory Structure
-
-```
+```text
 NEW_LANG/
-├── pyproject.toml               # Project configuration & script entry points
-├── README.md                    # Project overview & quickstart
-├── LANGUAGE_GUIDE.md            # Complete Fresh Language & Syntax Specification
-├── docs/                        # Formal architectural documentation & guides
-│   ├── COMPARISON.md            # Academic Architectural Comparison (Python vs C vs Fresh)
-│   ├── PROS.md                  # Project Justification & Language Innovations
-│   ├── FRESH_SPECIFICATION.md   # Language Grammar & Semantics Specification
-│   ├── COMPATIBILITY_AND_VERSIONING.md # Compatibility & SemVer Policy
-│   ├── project_guide.md         # Compiler Engineering Roadmap & Feature Matrix
-│   └── production_release_guide.md # Multi-Channel Distribution & Release Guide
-├── examples/                    # Showcase Fresh programs (01-07)
-├── vscode-extension/            # VS Code Extension Package (.vsix source)
-├── .vscode/                     # VS Code workspace settings & syntax highlighting
-├── src/
-│   └── fresh/
-│       ├── __init__.py
-│       ├── __main__.py          # Entry point for python -m fresh
-│       ├── cli.py               # CLI subcommands (run, check, fmt, init, build, test, repl)
-│       ├── pipeline.py          # Unified compilation & execution pipeline
-│       ├── formatter.py         # Deterministic AST-based code formatter
-│       ├── modules.py           # Multi-file module loader & circular dependency detector
-│       ├── package.py           # Project packaging & build manager
-│       ├── common/              # Common utilities
-│       │   ├── span.py          # Source location tracking (Span, SourceFile)
-│       │   ├── errors.py        # Diagnostic error hierarchy with source underlines
-│       │   └── types.py         # FreshType representations (FreshInt, FreshFloat, etc.)
-│       ├── lexer/               # Lexical analyzer
-│       │   ├── tokens.py        # TokenType IntEnum and Token dataclass
-│       │   └── scanner.py       # Single-pass UTF-8 Scanner
-│       ├── parser/              # Syntactic analyzer
-│       │   ├── ast.py           # 30+ AST node definitions & ASTPrinter
-│       │   └── parser.py        # Pratt parser + recursive descent + recursion protection
-│       ├── analyzer/            # Semantic analyzer
-│       │   ├── symbols.py       # Symbol and Scope linked hierarchy
-│       │   ├── resolver.py      # Variable resolution & control flow scope checker
-│       │   └── type_checker.py  # Static type checker & local inferrer
-│       ├── codegen/             # Code generation
-│       │   ├── opcodes.py       # Opcode IntEnum (~40 instructions)
-│       │   ├── chunk.py         # Chunk bytecode container & constant pool
-│       │   ├── compiler.py      # AST-to-bytecode compiler & jump patcher
-│       │   ├── disassembler.py  # Human-readable bytecode disassembler
-│       │   ├── optimizer.py     # Optimization passes (constant folding, peepholes)
-│       │   └── c_transpiler.py  # C Code Generator with type-correct println
-│       ├── vm/                  # Virtual machine runtime
-│       │   ├── value.py         # Value representation & truthiness rules
-│       │   ├── frame.py         # CallFrame stack frame structure
-│       │   ├── objects.py       # Heap object definitions (ObjClosure, ObjArray, etc.)
-│       │   ├── gc.py            # Mark-and-Sweep GC with stress mode support
-│       │   └── vm.py            # Main execution engine with bounds safety checks
-│       └── stdlib/              # Standard library
-│           ├── builtins.py      # Console, conversions, array & file I/O builtins
-│           └── math_lib.py      # Math native functions (sqrt, pow, floor, etc.)
-└── tests/                       # Complete 14-suite automated test suite (86 tests, 80% coverage)
-    ├── conftest.py              # Test runner fixture
-    ├── test_all_phases.py       # End-to-end multi-phase compiler tests
-    ├── test_examples.py         # Official examples verification tests
-    ├── test_spec_conformance.py # Specification contract tests
-    ├── benchmarks/              # Throughput and performance benchmarks
-    ├── c_backend/               # C backend unit & negative diagnostic tests
-    ├── cli/                     # CLI integration tests (run, check, fmt, test)
-    ├── diagnostics/             # Adversarial syntax & type error tests
-    ├── differential/            # VM vs Native GCC differential parity tests
-    ├── fmt/                     # Code formatter idempotence tests
-    ├── fuzz/                    # Lexer, parser, and semantic analyzer fuzzing
-    ├── gc/                      # GC stress mode, cycles, and upvalue tests
-    ├── modules/                 # Multi-file module imports & cycle detection
-    ├── optimizer/               # Optimizer equivalence verification tests
-    ├── package/                 # Project init and build tests
-    └── vm/                      # VM safety & stack bounds tests
+├── all_features.fresh         # Complete feature showcase script
+├── LANGUAGE_GUIDE.md          # Comprehensive language tutorial and handbook
+├── README.md                  # Main project documentation (this file)
+├── pyproject.toml             # Python build metadata & tool configuration
+├── docs/                      # In-depth architectural documentation
+│   ├── FRESH_SPECIFICATION.md # Formal EBNF grammar & normative specification
+│   ├── project_guide.md       # Architecture & contributor implementation guide
+│   ├── COMPARISON.md          # Academic comparison vs Rust, Go, Python, Lua, C
+│   ├── PROS.md                # Language design rationale and benefits
+│   ├── COMPATIBILITY_AND_VERSIONING.md # Versioning & SemVer policy
+│   └── production_release_guide.md     # Packaging and release workflow
+├── examples/                  # Official runnable example programs
+├── src/fresh/                 # Fresh compiler & runtime core package
+│   ├── analyzer/              # Semantic analysis (Resolver, Type Checker)
+│   ├── codegen/               # Bytecode compiler, optimizer, and C transpiler
+│   ├── common/                # Shared AST tokens, type definitions, error types
+│   ├── lexer/                 # Scanner and token definitions
+│   ├── parser/                # Pratt expression parser and statement AST
+│   ├── stdlib/                # Built-in functions and math library
+│   ├── vm/                    # Virtual machine, CallFrame, and Mark-and-Sweep GC
+│   ├── cli.py                 # Command-line interface driver
+│   ├── formatter.py           # Canonical source code formatter
+│   ├── modules.py             # Multi-file module loader and cycle detector
+│   ├── package.py             # Package manager (init & build)
+│   └── pipeline.py            # Unified end-to-end execution pipeline
+├── tests/                     # 93 automated tests across all subsystems
+└── vscode-extension/          # Official VS Code syntax highlighter & icons
 ```
 
 ---
 
-## 📖 Documentation & Guides
+## 📚 Documentation Index
 
-- [**Fresh Language Specification (`docs/FRESH_SPECIFICATION.md`)**](docs/FRESH_SPECIFICATION.md): Authoritative language grammar, opcode semantics, and standard library contract.
-- [**Fresh Language Guide (`LANGUAGE_GUIDE.md`)**](LANGUAGE_GUIDE.md): Practical tutorial and reference on syntax, types, control flow, functions, structs, and modules.
-- [**Compatibility & Versioning Policy (`docs/COMPATIBILITY_AND_VERSIONING.md`)**](docs/COMPATIBILITY_AND_VERSIONING.md): SemVer 2.0 stability rules, standard library guarantees, and deprecation cycle.
-- [**Project Justification & PROS (`docs/PROS.md`)**](docs/PROS.md): Architectural motivation, design decisions, and benefits.
-- [**Academic Architectural Comparison (`docs/COMPARISON.md`)**](docs/COMPARISON.md): Formal technical comparison of Python vs. C vs. Fresh.
-- [**Production Release Guide (`docs/production_release_guide.md`)**](docs/production_release_guide.md): Wheel packaging, standalone distribution, and VS Code extension release.
+For in-depth guides, check the dedicated documents:
+
+- 📘 [**Language Guide (`LANGUAGE_GUIDE.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/LANGUAGE_GUIDE.md): Complete language tutorial from variables to closures and pattern matching.
+- 📐 [**Formal Specification (`docs/FRESH_SPECIFICATION.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/FRESH_SPECIFICATION.md): EBNF grammar, typing rules, and operational semantics.
+- 🏛 [**Architecture & Contributor Guide (`docs/project_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/project_guide.md): Deep-dive into compiler internals, AST structures, and VM bytecode engine.
+- ⚖️ [**Comparative Analysis (`docs/COMPARISON.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/COMPARISON.md): Architectural comparison against Rust, Go, Python, Lua, and C.
+- 💡 [**Project Advantages & Design Rationale (`docs/PROS.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/PROS.md): Why Fresh was built and key architectural strengths.
+- 🚀 [**Production & Release Guide (`docs/production_release_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/production_release_guide.md): Wheel packaging, release checklist, and distribution.
 
 ---
 
-## 🧪 Running Tests & Quality Gates
+## 🧪 Running the Test Suite
 
-Fresh includes an extensive automated test suite covering all phases across 14 test modules.
-
-To run the complete test suite with coverage enforcement:
+Run the full automated test suite containing unit, integration, differential, safety, and GC stress tests:
 
 ```bash
-python -m pytest -v --cov=fresh --cov-fail-under=75
-```
-*(or via CLI: `fresh test`)*
+# Run all tests
+pytest -v
 
-**Verification**: **86 passing tests** and **80% total branch coverage** covering lexing, parsing, resolution, type checking, optimization, GC cycles, differential VM/native execution, fuzzing, formatting, modules, packaging, benchmarks, and specification conformance.
+# Run with test coverage report
+pytest --cov=fresh --cov-report=term-missing
+```
 
 ---
 
 ## 📄 License
 
-Distributed under the **MIT License**. See `LICENSE` for more information.
+Fresh is open-source software distributed under the terms of the **[MIT License](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/LICENSE)**.
