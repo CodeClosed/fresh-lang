@@ -456,31 +456,127 @@ Fresh automatically resolves relative paths, caches duplicate imports, and detec
 
 ## 14. CLI Developer Tooling
 
-### Run
+Fresh comes with a full suite of built-in developer tools accessible via the CLI:
+
+```bash
+# General invocation methods on all commands:
+fresh <command> [args]           # Direct command (if PATH configured)
+.\fresh <command> [args]         # Windows repository wrapper
+python -m fresh <command> [args] # Universal Python command
+```
+
+---
+
+### 14.1 `fresh run <file>` — Program Execution
+Compiles your code through all frontend and backend passes and executes it on the Bytecode VM:
+
 ```bash
 fresh run my_script.fresh
 ```
 
-### Type Check (Static Analysis without Execution)
+#### Compiler Inspection Options
+You can inspect intermediate representations at any phase of compilation:
+
+- **`--dump-tokens`**: Prints scanner tokens with line and column numbers.
+  ```bash
+  fresh run my_script.fresh --dump-tokens
+  ```
+- **`--dump-ast`**: Prints the formatted Abstract Syntax Tree from the Pratt parser.
+  ```bash
+  fresh run my_script.fresh --dump-ast
+  ```
+- **`--disassemble`**: Prints disassembled VM bytecode instructions and constant pool.
+  ```bash
+  fresh run my_script.fresh --disassemble
+  ```
+- **`--emit-c`**: Transpiles the Fresh AST into standalone C99 source code.
+  ```bash
+  fresh run my_script.fresh --emit-c
+  ```
+
+---
+
+### 14.2 `fresh check <file>` — Static Type Checking & Linting
+Runs lexical scanning, parsing, name resolution, and static type checking without executing the script. Catches type errors, undefined variables, and mismatched function signatures:
+
 ```bash
 fresh check my_script.fresh
 ```
+*Output on success:* `Check passed for 'my_script.fresh'.`
 
-### Auto-Format Code
+---
+
+### 14.3 `fresh fmt <file>` — Deterministic Code Formatter
+Formats Fresh source files with standardized indentation, spacing, and brace placement:
+
 ```bash
+# Format file in-place:
 fresh fmt my_script.fresh
-# Or check if formatted:
+
+# Verify formatting without modifying (returns exit code 1 if unformatted, ideal for CI):
 fresh fmt my_script.fresh --check
 ```
 
-### Scaffold a New Project
+---
+
+### 14.4 `fresh init <name>` — Project Scaffolding
+Initializes a new Fresh project directory with a manifest and standard layout:
+
 ```bash
 fresh init my_project
+```
+*Creates:*
+```text
+my_project/
+├── fresh.toml         # Project manifest (package metadata & entry point)
+├── src/
+│   └── main.fresh     # Application entrypoint
+└── tests/
+    └── test_basic.fresh
+```
+
+---
+
+### 14.5 `fresh build [path]` — Native Executable Compiler
+Reads `fresh.toml`, resolves all imported modules, and compiles the project entrypoint into a standalone native binary executable using the C backend (`gcc`/`clang`):
+
+```bash
 cd my_project
 fresh build
 ```
+*Output:* `Build succeeded: 'build/my_project.exe'` *(Run directly with `./build/my_project.exe` without Python!)*
 
-### Interactive REPL
+---
+
+### 14.6 `fresh test [path]` — Automated Testing
+Runs the test suite using pytest directly from the CLI:
+
+```bash
+fresh test
+```
+
+---
+
+### 14.7 `fresh repl` — Interactive REPL
+Starts an interactive Read-Eval-Print-Loop session to test language features live:
+
 ```bash
 fresh repl
 ```
+```text
+Fresh Programming Language v0.1.0
+Type 'exit()' or Ctrl+C to quit.
+
+fresh> let a = 10;
+nil
+fresh> let b = 25;
+nil
+fresh> a + b * 2;
+60
+fresh> fn greet(name: string) -> string { return "Hello, " + name; }
+nil
+fresh> greet("Fresh")
+Hello, Fresh
+fresh> exit()
+```
+
