@@ -57,16 +57,30 @@ println(message);
 ```
 
 ### 3. Run It!
+You can run your program using any of these simple methods:
+
 ```bash
+# Option A: Direct command (if installed via pip / venv / PATH)
 fresh run hello.fresh
-# Or via python module:
+
+# Option B: Windows local repo wrapper (works immediately with zero setup)
+.\fresh run hello.fresh
+
+# Option C: Universal Python module (works on any machine/shell)
 python -m fresh run hello.fresh
 ```
+
+> **Windows Tip**: If `fresh` is not recognized globally in your PowerShell, run this once:
+> ```powershell
+> [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$env:APPDATA\Python\Python314\Scripts", "User")
+> ```
+> Or simply use `.\fresh run hello.fresh`!
 
 **Output:**
 ```text
 Hello, Developer! Welcome to Fresh ⚡
 ```
+
 
 ---
 

@@ -37,8 +37,16 @@ println("Hello, World from Fresh! ⚡");
 Run this file from your terminal:
 
 ```bash
+# Option 1: Direct command
 fresh run hello.fresh
+
+# Option 2: Windows local repository wrapper
+.\fresh run hello.fresh
+
+# Option 3: Universal Python command
+python -m fresh run hello.fresh
 ```
+
 
 ---
 
