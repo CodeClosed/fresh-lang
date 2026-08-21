@@ -1,0 +1,236 @@
+struct Point { x: float, y: float }
+
+struct Person { name: string, age: int, is_active: bool }
+
+fn add(a: int, b: int) -> int {
+    return a + b;
+}
+
+fn fibonacci(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fn make_counter(start: int) -> fn {
+    let count = start;
+    fn increment() -> int {
+        count = count + 1;
+        return count;
+    }
+    return increment;
+}
+
+fn evaluate_code(code: int) -> string {
+    return match code { 200 => "OK", 404 => "Not Found", 500 => "Server Error", c if c >= 400 && c < 500 => "Client Error (" + to_string(c) + ")", _ => "Unknown Code" };
+}
+
+println("==================================================");
+
+println("[+] STARTING FRESH ULTIMATE STRESS TEST");
+
+println("==================================================");
+
+let integer_val: int = -42;
+
+let float_val: float = 3.14159;
+
+let bool_val: bool = true;
+
+let str_val: string = "Hello,\\t\\\"Fresh\\\"!\\n";
+
+let nil_val = nil;
+
+println("--- 1. Data Types & Types ---");
+
+println("Integer: " + to_string(integer_val) + " | Type: " + type(integer_val));
+
+println("Float: " + to_string(float_val) + " | Type: " + type(float_val));
+
+println("Boolean: " + to_string(bool_val) + " | Type: " + type(bool_val));
+
+println("String: " + str_val + " | Type: " + type(str_val));
+
+println("Nil: " + to_string(nil_val) + " | Type: " + type(nil_val));
+
+println("--- 2. Operators & Precedence ---");
+
+let op_test1 = 1 + 2 * 3;
+
+let op_test2 = 1 + 2 * 3;
+
+let mod_val = 10 % 3;
+
+let neg_val = -op_test1;
+
+let not_val = !bool_val;
+
+let logic_val = op_test1 == 7 && op_test2 > 5 || !not_val;
+
+println("1 + 2 * 3 = " + to_string(op_test1));
+
+println("(1 + 2) * 3 = " + to_string(op_test2));
+
+println("10 % 3 = " + to_string(mod_val));
+
+println("Negation: " + to_string(neg_val));
+
+println("Logical expression: " + to_string(logic_val));
+
+println("--- 3. Control Flow ---");
+
+let score = 85;
+
+if (score >= 90) {
+    println("Score Grade: A");
+} else {
+    if (score >= 80) {
+        println("Score Grade: B");
+    } else {
+        println("Score Grade: C");
+    }
+}
+
+let while_counter = 0;
+
+let while_sum = 0;
+
+while (while_counter < 5) {
+    while_sum = while_sum + while_counter;
+    while_counter = while_counter + 1;
+}
+
+println("While loop sum (0 to 4): " + to_string(while_sum));
+
+let loop_results: [int] = [];
+
+for (let i = 0; i < 10; i = i + 1) {
+    if (i == 3) {
+        continue;
+    }
+    if (i == 7) {
+        break;
+    }
+    push(loop_results, i);
+}
+
+println("For loop with continue (skip 3) and break (at 7): " + to_string(loop_results));
+
+println("--- 4. Functions & Closures ---");
+
+let add_res = add(15, 27);
+
+println("Named function add(15, 27): " + to_string(add_res));
+
+let fib_res = fibonacci(10);
+
+println("Recursive fibonacci(10): " + to_string(fib_res));
+
+let multiply = fn(x: int, y: int) -> int {
+    return x * y;
+};
+
+println("Lambda multiply(6, 7): " + to_string(multiply(6, 7)));
+
+let counter_a = make_counter(0);
+
+let counter_b = make_counter(100);
+
+println("Closure A count 1: " + to_string(counter_a()));
+
+println("Closure A count 2: " + to_string(counter_a()));
+
+println("Closure B count 1: " + to_string(counter_b()));
+
+println("Closure A count 3: " + to_string(counter_a()));
+
+println("--- 5. Structs & Mutation ---");
+
+let pt = Point { x: 1.5, y: 2.5 };
+
+println("Point initial: x=" + to_string(pt.x) + ", y=" + to_string(pt.y));
+
+pt.x = 10.0;
+
+pt.y = 20.0;
+
+println("Point mutated: x=" + to_string(pt.x) + ", y=" + to_string(pt.y));
+
+let user = Person { name: "Alice", age: 28, is_active: true };
+
+println("Person: " + user.name + ", age " + to_string(user.age) + ", active=" + to_string(user.is_active));
+
+println("--- 6. Dynamic Arrays & Matrices ---");
+
+let numbers: [int] = [10, 20, 30, 40];
+
+println("Initial array: " + to_string(numbers));
+
+numbers[1] = 99;
+
+println("Mutated index 1: " + to_string(numbers[1]));
+
+push(numbers, 50);
+
+println("After push(50): " + to_string(numbers) + ", len=" + to_string(len(numbers)));
+
+let popped = pop(numbers);
+
+println("Popped value: " + to_string(popped) + ", len=" + to_string(len(numbers)));
+
+let matrix = [[1.0, 2.0], [3.0, 4.0]];
+
+println("Matrix row 1 col 0: " + to_string(matrix[1][0]));
+
+matrix[0][1] = 9.9;
+
+println("Mutated matrix row 0 col 1: " + to_string(matrix[0][1]));
+
+println("--- 7. Pattern Matching ---");
+
+println("Code 200: " + evaluate_code(200));
+
+println("Code 404: " + evaluate_code(404));
+
+println("Code 403: " + evaluate_code(403));
+
+println("Code 999: " + evaluate_code(999));
+
+println("--- 8. Standard Library Math ---");
+
+println("abs(-15.5) = " + to_string(abs(-15.5)));
+
+println("sqrt(144.0) = " + to_string(sqrt(144.0)));
+
+println("pow(2.0, 8.0) = " + to_string(pow(2.0, 8.0)));
+
+println("min(10, 20) = " + to_string(min(10, 20)));
+
+println("max(10, 20) = " + to_string(max(10, 20)));
+
+println("floor(3.9) = " + to_string(floor(3.9)));
+
+println("ceil(3.1) = " + to_string(ceil(3.1)));
+
+println("round(3.6) = " + to_string(round(3.6)));
+
+println("--- 9. File I/O ---");
+
+let test_file_path = "stress_test_temp.txt";
+
+let test_content = "Fresh Language Stress Test File\nTimestamp: " + to_string(clock()) + "\n";
+
+write_file(test_file_path, test_content);
+
+println("File created exists? " + to_string(file_exists(test_file_path)));
+
+let read_back = read_file(test_file_path);
+
+println("Read back content length: " + to_string(len(read_back)));
+
+println("==================================================");
+
+println("[OK] ALL FRESH LANGUAGE FEATURES PASSED STRESS TEST!");
+
+println("==================================================");

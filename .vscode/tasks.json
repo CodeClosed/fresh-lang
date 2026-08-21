@@ -1,0 +1,72 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Fresh File",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "fresh", "run", "${file}"],
+      "options": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        }
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Run Fresh File (Disassemble Bytecode)",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "fresh", "run", "${file}", "--disassemble"],
+      "options": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Run Fresh File (Emit C Code)",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "fresh", "run", "${file}", "--emit-c"],
+      "options": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared",
+        "focus": true
+      }
+    },
+    {
+      "label": "Launch Fresh REPL",
+      "type": "shell",
+      "command": "python",
+      "args": ["-m", "fresh", "repl"],
+      "options": {
+        "env": {
+          "PYTHONPATH": "${workspaceFolder}/src"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    }
+  ]
+}

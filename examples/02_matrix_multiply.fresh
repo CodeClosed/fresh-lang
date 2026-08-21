@@ -1,0 +1,25 @@
+fn create_matrix_2x2(a: float, b: float, c: float, d: float) -> [[float]] {
+    return [[a, b], [c, d]];
+}
+
+let m1 = create_matrix_2x2(1.0, 2.0, 3.0, 4.0);
+
+let m2 = create_matrix_2x2(2.0, 0.0, 1.0, 2.0);
+
+println("Matrix 1: " + to_string(m1));
+
+println("Matrix 2: " + to_string(m2));
+
+let result = [[0.0, 0.0], [0.0, 0.0]];
+
+for (let i = 0; i < 2; i = i + 1) {
+    for (let j = 0; j < 2; j = j + 1) {
+        let sum = 0.0;
+        for (let k = 0; k < 2; k = k + 1) {
+            sum = sum + m1[i][k] * m2[k][j];
+        }
+        result[i][j] = sum;
+    }
+}
+
+println("Result of M1 x M2: " + to_string(result));

@@ -1,0 +1,78 @@
+name: Fresh CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-cov anyio hatchling build ruff mypy
+
+      - name: Code Quality & Linting Gate
+        run: |
+          ruff check src tests
+
+      - name: Static Type Checking Gate
+        run: |
+          mypy src/fresh
+
+      - name: Build Wheel & Source Distribution
+        run: |
+          python -m build
+
+      - name: Install from Built Wheel
+        run: |
+          pip install dist/*.whl
+
+      - name: Verify CLI & Run Examples
+        run: |
+          python -m fresh --help
+          fresh --help
+          fresh run examples/01_fibonacci.fresh
+          fresh check examples/01_fibonacci.fresh
+          fresh fmt --check examples/01_fibonacci.fresh
+
+      - name: Verify Native C Transpilation, Compilation & Execution
+        shell: bash
+        run: |
+          python -m fresh run --emit-c examples/01_fibonacci.fresh > fib.c
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            if command -v gcc &> /dev/null; then
+              gcc fib.c -o fib.exe
+              ./fib.exe
+            elif command -v cl &> /dev/null; then
+              cl fib.c
+              ./fib.exe
+            fi
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            clang -O2 fib.c -o fib
+            ./fib
+          else
+            gcc -O2 fib.c -o fib
+            ./fib
+          fi
+
+      - name: Run Test Suite with Coverage Quality Gate
+        run: |
+          pytest -v --cov=fresh --cov-fail-under=75

@@ -1,0 +1,17 @@
+struct Item { name: string, price: float, quantity: int }
+
+fn calc_total(item: Item) -> float {
+    return item.price * to_float(item.quantity);
+}
+
+let sword = Item { name: "Iron Sword", price: 49.99, quantity: 3 };
+
+println("Item: " + sword.name);
+
+println("Total Value: $" + to_string(calc_total(sword)));
+
+let inventory: [string] = ["Potion", "Shield"];
+
+push(inventory, "Magic Wand");
+
+println("Inventory size: " + to_string(len(inventory)));

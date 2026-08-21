@@ -1,0 +1,42 @@
+{
+  "name": "fresh-vscode",
+  "displayName": "Fresh Programming Language",
+  "description": "Language support, syntax highlighting, and custom file icons for the Fresh programming language.",
+  "version": "0.1.0",
+  "publisher": "fresh-lang",
+  "activationEvents": [
+    "*"
+  ],
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "fresh",
+        "aliases": ["Fresh", "fresh", "Vex", "vex"],
+        "extensions": [".fresh", ".vex"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "fresh",
+        "scopeName": "source.fresh",
+        "path": "./syntaxes/fresh.tmLanguage.json"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "fresh-icon-theme",
+        "label": "Fresh File Icon Theme",
+        "path": "./icon-theme.json"
+      }
+    ]
+  }
+}
+

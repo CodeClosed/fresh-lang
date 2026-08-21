@@ -1,0 +1,11 @@
+fn evaluate(op: string, a: int, b: int) -> int {
+    return match op { "+" => a + b, "-" => a - b, "*" => a * b, "/" if b != 0 => a / b, _ => 0 };
+}
+
+let add_res = evaluate("+", 15, 27);
+
+let div_res = evaluate("/", 100, 4);
+
+println("15 + 27 = " + to_string(add_res));
+
+println("100 / 4 = " + to_string(div_res));

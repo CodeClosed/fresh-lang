@@ -1,0 +1,21 @@
+{
+  "iconDefinitions": {
+    "_fresh_file": {
+      "iconPath": "./icon.png"
+    }
+  },
+  "fileExtensions": {
+    "fresh": "_fresh_file",
+    "vex": "_fresh_file"
+  },
+  "languageIds": {
+    "fresh": "_fresh_file",
+    "vex": "_fresh_file"
+  },
+  "light": {
+    "fileExtensions": {
+      "fresh": "_fresh_file",
+      "vex": "_fresh_file"
+    }
+  }
+}

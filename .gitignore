@@ -1,0 +1,36 @@
+﻿# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+*.pyc
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Scratch & Temporary outputs
+stress_test_temp.txt
+*.exe
+*.obj
+*.o
+*.pdb
+
+# Editor & OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
