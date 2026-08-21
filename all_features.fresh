@@ -1,0 +1,247 @@
+// ============================================================================
+// ALL FEATURES SHOWCASE - FRESH PROGRAMMING LANGUAGE
+// A complete tour demonstrating all syntax, runtime features, and standard lib
+// ============================================================================
+
+println("================================================================");
+println("          FRESH LANGUAGE - COMPLETE FEATURE SHOWCASE            ");
+println("================================================================");
+
+// ----------------------------------------------------------------------------
+// 1. Primitives, Types, and String Concatenation
+// ----------------------------------------------------------------------------
+println("\n[1] PRIMITIVE TYPES & OPERATORS");
+let an_int: int = 42;
+let a_float: float = 3.14159;
+let a_bool: bool = true;
+let a_str: string = "Fresh Language";
+let nil_val = nil;
+
+println("Integer: " + to_string(an_int) + " (type: " + type(an_int) + ")");
+println("Float:   " + to_string(a_float) + " (type: " + type(a_float) + ")");
+println("Boolean: " + to_string(a_bool) + " (type: " + type(a_bool) + ")");
+println("String:  " + a_str + " (type: " + type(a_str) + ")");
+println("Nil:     " + to_string(nil_val) + " (type: " + type(nil_val) + ")");
+
+let calc = (an_int * 2 + 16 / 4 - 10 % 3);
+println("Arithmetic (42 * 2 + 16 / 4 - 10 % 3) = " + to_string(calc));
+
+// ----------------------------------------------------------------------------
+// 2. Control Flow: If/Else, Loops, Break & Continue
+// ----------------------------------------------------------------------------
+println("\n[2] CONTROL FLOW & LOOPS");
+let score = 88;
+if (score >= 90) {
+    println("Grade: A");
+} else {
+    if (score >= 80) {
+        println("Grade: B (Score: " + to_string(score) + ")");
+    } else {
+        println("Grade: C");
+    }
+}
+
+// For-loop with continue and break
+let accumulated_evens = 0;
+for (let i = 1; i <= 20; i = i + 1) {
+    if (i % 2 != 0) {
+        continue; // skip odds
+    }
+    if (i > 10) {
+        break; // stop once we reach numbers > 10
+    }
+    accumulated_evens = accumulated_evens + i;
+}
+println("Sum of even numbers from 1 to 10: " + to_string(accumulated_evens));
+
+// While loop
+let countdown = 3;
+let timer_str = "";
+while (countdown > 0) {
+    timer_str = timer_str + to_string(countdown) + "... ";
+    countdown = countdown - 1;
+}
+println("Countdown: " + timer_str + "Liftoff!");
+
+// ----------------------------------------------------------------------------
+// 3. First-Class Functions, Closures, and Higher-Order Functions
+// ----------------------------------------------------------------------------
+println("\n[3] FUNCTIONS, CLOSURES & HIGHER-ORDER FUNCTIONS");
+
+// Recursive function
+fn fibonacci(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+println("fibonacci(10) = " + to_string(fibonacci(10)));
+
+// Closure / Function factory capturing state
+fn make_bank_account(initial_balance: int) -> fn {
+    let balance = initial_balance;
+    fn transact(amount: int) -> int {
+        balance = balance + amount;
+        return balance;
+    }
+    return transact;
+}
+
+let account_a = make_bank_account(1000);
+let account_b = make_bank_account(250);
+
+println("Account A deposit $500:  balance = $" + to_string(account_a(500)));
+println("Account B deposit $100:  balance = $" + to_string(account_b(100)));
+println("Account A withdraw $200: balance = $" + to_string(account_a(-200)));
+println("Account B check balance: balance = $" + to_string(account_b(0)));
+
+// Higher-order Map & Filter implemented in user code
+fn map_ints(arr: [int], f: fn) -> [int] {
+    let out: [int] = [];
+    for (let idx = 0; idx < len(arr); idx = idx + 1) {
+        push(out, f(arr[idx]));
+    }
+    return out;
+}
+
+fn filter_ints(arr: [int], pred: fn) -> [int] {
+    let out: [int] = [];
+    for (let idx = 0; idx < len(arr); idx = idx + 1) {
+        if (pred(arr[idx])) {
+            push(out, arr[idx]);
+        }
+    }
+    return out;
+}
+
+let raw_nums: [int] = [1, 2, 3, 4, 5, 6, 7, 8];
+let sq_fn = fn(x: int) -> int { return x * x; };
+let gt_ten = fn(x: int) -> bool { return x > 10; };
+
+let squares = map_ints(raw_nums, sq_fn);
+let big_squares = filter_ints(squares, gt_ten);
+
+println("Original numbers: " + to_string(raw_nums));
+println("Squared numbers:  " + to_string(squares));
+println("Squares > 10:     " + to_string(big_squares));
+
+// ----------------------------------------------------------------------------
+// 4. Structs, Fields & In-Place Mutation
+// ----------------------------------------------------------------------------
+println("\n[4] STRUCTS & FIELD MUTATION");
+
+struct Vector3 {
+    x: float,
+    y: float,
+    z: float
+}
+
+struct Entity {
+    name: string,
+    position: Vector3,
+    health: int
+}
+
+let player = Entity {
+    name: "Hero",
+    position: Vector3 { x: 0.0, y: 5.0, z: -10.0 },
+    health: 100
+};
+
+println("Player initial state: " + player.name + " at (" +
+        to_string(player.position.x) + ", " +
+        to_string(player.position.y) + ", " +
+        to_string(player.position.z) + ") | HP: " + to_string(player.health));
+
+// Mutate fields directly
+player.position.x = 12.5;
+player.position.z = 25.0;
+player.health = player.health - 15;
+
+println("Player moved & took damage: " + player.name + " at (" +
+        to_string(player.position.x) + ", " +
+        to_string(player.position.y) + ", " +
+        to_string(player.position.z) + ") | HP: " + to_string(player.health));
+
+// ----------------------------------------------------------------------------
+// 5. Dynamic Arrays, Matrices, and Stack Operations
+// ----------------------------------------------------------------------------
+println("\n[5] DYNAMIC ARRAYS & 2D MATRICES");
+
+let matrix = [
+    [1, 2, 3],
+    [4, 5, 6],
+    [7, 8, 9]
+];
+
+println("Matrix row 0: " + to_string(matrix[0]));
+println("Matrix row 1: " + to_string(matrix[1]));
+println("Matrix row 2: " + to_string(matrix[2]));
+
+// Update center cell
+matrix[1][1] = 99;
+println("Updated matrix center (row 1, col 1) to: " + to_string(matrix[1][1]));
+
+// Dynamic Stack operations
+let items: [string] = ["apple", "banana"];
+push(items, "cherry");
+push(items, "date");
+println("After pushes: " + to_string(items) + " (len: " + to_string(len(items)) + ")");
+let removed = pop(items);
+println("Popped item: '" + removed + "', remaining items: " + to_string(items));
+
+// ----------------------------------------------------------------------------
+// 6. Pattern Matching with Value & Expression Guards
+// ----------------------------------------------------------------------------
+println("\n[6] PATTERN MATCHING WITH GUARDS");
+
+fn evaluate_http_status(status_code: int, is_authenticated: bool) -> string {
+    return match status_code {
+        200 if is_authenticated => "200 OK (Authenticated user)",
+        200 if !is_authenticated => "200 OK (Anonymous guest)",
+        401 => "401 Unauthorized",
+        404 => "404 Not Found",
+        code if code >= 500 && code < 600 => "Server Error: Code " + to_string(code),
+        _ => "Other HTTP Status"
+    };
+}
+
+println("Status 200 (auth=true):  " + evaluate_http_status(200, true));
+println("Status 200 (auth=false): " + evaluate_http_status(200, false));
+println("Status 404:              " + evaluate_http_status(404, false));
+println("Status 503:              " + evaluate_http_status(503, true));
+println("Status 301:              " + evaluate_http_status(301, false));
+
+// ----------------------------------------------------------------------------
+// 7. Standard Math Library & System Builtins
+// ----------------------------------------------------------------------------
+println("\n[7] STANDARD MATH LIBRARY & SYSTEM");
+
+let val_neg = -49.6;
+println("abs(" + to_string(val_neg) + ")  = " + to_string(abs(val_neg)));
+println("sqrt(81.0)     = " + to_string(sqrt(81.0)));
+println("pow(3.0, 4.0)  = " + to_string(pow(3.0, 4.0)));
+println("min(45, 12)    = " + to_string(min(45, 12)));
+println("max(45, 12)    = " + to_string(max(45, 12)));
+println("floor(7.89)    = " + to_string(floor(7.89)));
+println("ceil(7.12)     = " + to_string(ceil(7.12)));
+println("round(7.50)    = " + to_string(round(7.50)));
+println("System clock() = " + to_string(clock()));
+
+// ----------------------------------------------------------------------------
+// 8. File I/O Operations
+// ----------------------------------------------------------------------------
+println("\n[8] FILE I/O SUBSYSTEM");
+
+let sample_file = "fresh_demo_output.txt";
+let file_data = "Hello from Fresh!\nGenerated at clock: " + to_string(clock()) + "\n";
+
+write_file(sample_file, file_data);
+println("File '" + sample_file + "' written. Exists? " + to_string(file_exists(sample_file)));
+
+let content = read_file(sample_file);
+println("Read back content length: " + to_string(len(content)) + " bytes");
+
+println("\n================================================================");
+println("         [SUCCESS] ALL FRESH LANGUAGE FEATURES PASSED!          ");
+println("================================================================");

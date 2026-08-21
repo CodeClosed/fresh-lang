@@ -5,17 +5,14 @@
     }
   },
   "fileExtensions": {
-    "fresh": "_fresh_file",
-    "vex": "_fresh_file"
+    "fresh": "_fresh_file"
   },
   "languageIds": {
-    "fresh": "_fresh_file",
-    "vex": "_fresh_file"
+    "fresh": "_fresh_file"
   },
   "light": {
     "fileExtensions": {
-      "fresh": "_fresh_file",
-      "vex": "_fresh_file"
+      "fresh": "_fresh_file"
     }
   }
 }

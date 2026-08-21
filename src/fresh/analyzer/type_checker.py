@@ -350,22 +350,24 @@ class TypeChecker:
                 arg_types = [self._check_expr(a) for a in args]
 
                 if isinstance(callee_type, FreshFunction):
-                    if len(arg_types) != len(callee_type.param_types):
-                        raise FreshTypeError(
-                            message=f"Expected {len(callee_type.param_types)} arguments but got {len(arg_types)}.",
-                            line=paren.line,
-                            column=paren.column,
-                            filename=self.filename,
-                        )
-                    for i, (expected, actual) in enumerate(zip(callee_type.param_types, arg_types)):
-                        if not self._types_compatible(expected, actual):
+                    if callee_type.param_types is not None:
+                        if len(arg_types) != len(callee_type.param_types):
                             raise FreshTypeError(
-                                message=f"Argument {i+1} expected '{expected}', got '{actual}'.",
+                                message=f"Expected {len(callee_type.param_types)} arguments but got {len(arg_types)}.",
                                 line=paren.line,
                                 column=paren.column,
                                 filename=self.filename,
                             )
-                    return callee_type.return_type or FreshNil()
+                        for i, (expected, actual) in enumerate(zip(callee_type.param_types, arg_types)):
+                            if not self._types_compatible(expected, actual):
+                                raise FreshTypeError(
+                                    message=f"Argument {i+1} expected '{expected}', got '{actual}'.",
+                                    line=paren.line,
+                                    column=paren.column,
+                                    filename=self.filename,
+                                )
+                    return callee_type.return_type or FreshAny()
+
 
                 if isinstance(callee_type, FreshAny):
                     return FreshAny()

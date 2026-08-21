@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Fresh: Run Active File (F5)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "fresh",
+            "args": [
+                "run",
+                "${file}"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "name": "Fresh: Run all_features.fresh",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "fresh",
+            "args": [
+                "run",
+                "${workspaceFolder}/all_features.fresh"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

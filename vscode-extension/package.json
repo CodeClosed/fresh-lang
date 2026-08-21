@@ -19,8 +19,9 @@
     "languages": [
       {
         "id": "fresh",
-        "aliases": ["Fresh", "fresh", "Vex", "vex"],
-        "extensions": [".fresh", ".vex"],
+        "aliases": ["Fresh", "fresh"],
+        "extensions": [".fresh"],
+
         "configuration": "./language-configuration.json"
       }
     ],

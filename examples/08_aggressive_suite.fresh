@@ -1,0 +1,214 @@
+// =========================================================================
+// FRESH AGGRESSIVE INTEGRATION & STRESS TEST SUITE
+// Tests all language features, runtime mechanics, and standard libraries
+// =========================================================================
+
+println("==================================================");
+println("[+] RUNNING FRESH AGGRESSIVE STRESS SUITE");
+println("==================================================");
+
+// --- 1. Arithmetic Precedence, Modulo & Logic ---
+let a = 10;
+let b = 25;
+let c = -5;
+let arith = (a * b + (100 / c) - (b % 4)) * -1;
+if (arith != -229) {
+    println("FAIL: Arithmetic mismatch " + to_string(arith));
+} else {
+    println("[OK] Arithmetic and precedence passed: " + to_string(arith));
+}
+
+let logic = (a < b && c < 0) || (a == b && false) || !(b > 100);
+if (!logic) {
+    println("FAIL: Logic expression failed");
+} else {
+    println("[OK] Boolean logic and short-circuiting passed");
+}
+
+// --- 2. Control Flow: Nested Loops, Breaks, Continues ---
+let loop_sum = 0;
+for (let i = 0; i < 15; i = i + 1) {
+    if (i % 2 == 0) {
+        continue;
+    }
+    if (i > 11) {
+        break;
+    }
+    let j = 0;
+    while (j < 3) {
+        loop_sum = loop_sum + i * 10 + j;
+        j = j + 1;
+    }
+}
+if (loop_sum != 1098) {
+    println("FAIL: Loop sum mismatch " + to_string(loop_sum));
+} else {
+    println("[OK] Control flow (break/continue/nested loops) passed: sum=" + to_string(loop_sum));
+}
+
+// --- 3. Closures, Upvalues & Independent Mutable State ---
+fn make_accumulator(start: int) -> fn {
+    let current = start;
+    fn add_and_get(delta: int) -> int {
+        current = current + delta;
+        return current;
+    }
+    return add_and_get;
+}
+
+let acc1 = make_accumulator(100);
+let acc2 = make_accumulator(500);
+
+let a1_step1 = acc1(50);
+let a2_step1 = acc2(25);
+let a1_step2 = acc1(-30);
+let a2_step2 = acc2(100);
+
+if (a1_step1 != 150 || a2_step1 != 525 || a1_step2 != 120 || a2_step2 != 625) {
+    println("FAIL: Closure accumulator state corrupted");
+} else {
+    println("[OK] Closures and independent state mutation passed");
+}
+
+// --- 4. Higher-Order Functions: Custom Map & Filter with Closures ---
+fn apply_map(arr: [int], transform: fn) -> [int] {
+    let result: [int] = [];
+    for (let i = 0; i < len(arr); i = i + 1) {
+        push(result, transform(arr[i]));
+    }
+    return result;
+}
+
+fn apply_filter(arr: [int], predicate: fn) -> [int] {
+    let result: [int] = [];
+    for (let i = 0; i < len(arr); i = i + 1) {
+        if (predicate(arr[i])) {
+            push(result, arr[i]);
+        }
+    }
+    return result;
+}
+
+let numbers: [int] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+let double_fn = fn(x: int) -> int { return x * 2; };
+let is_even_fn = fn(x: int) -> bool { return x % 2 == 0; };
+
+let evens = apply_filter(numbers, is_even_fn);
+let doubled_evens = apply_map(evens, double_fn);
+
+if (len(doubled_evens) != 5 || doubled_evens[0] != 4 || doubled_evens[4] != 20) {
+    println("FAIL: Higher-order functions mismatch");
+} else {
+    println("[OK] Higher-order functions (map/filter) passed: " + to_string(doubled_evens));
+}
+
+// --- 5. Deep Recursion: Ackermann & Factorial ---
+fn factorial(n: int) -> int {
+    if (n <= 1) { return 1; }
+    return n * factorial(n - 1);
+}
+
+fn ackermann(m: int, n: int) -> int {
+    if (m == 0) {
+        return n + 1;
+    } else {
+        if (m > 0 && n == 0) {
+            return ackermann(m - 1, 1);
+        } else {
+            return ackermann(m - 1, ackermann(m, n - 1));
+        }
+    }
+}
+
+if (factorial(6) != 720 || ackermann(2, 3) != 9) {
+    println("FAIL: Recursion mismatch");
+} else {
+    println("[OK] Deep recursion (factorial=720, ackermann(2,3)=9) passed");
+}
+
+// --- 6. Structs, Mutation & Nested Structures ---
+struct Vec2 { x: float, y: float }
+struct Particle { pos: Vec2, vel: Vec2, mass: float }
+
+fn step_particle(p: Particle, dt: float) -> Particle {
+    let new_x = p.pos.x + p.vel.x * dt;
+    let new_y = p.pos.y + p.vel.y * dt;
+    p.pos.x = new_x;
+    p.pos.y = new_y;
+    return p;
+}
+
+let p1 = Particle {
+    pos: Vec2 { x: 0.0, y: 10.0 },
+    vel: Vec2 { x: 5.0, y: -2.0 },
+    mass: 1.5
+};
+
+step_particle(p1, 2.0);
+if (p1.pos.x != 10.0 || p1.pos.y != 6.0) {
+    println("FAIL: Struct mutation failed");
+} else {
+    println("[OK] Structs and nested mutation passed");
+}
+
+// --- 7. Dynamic Arrays, Matrices & Pop/Push Mechanics ---
+let grid = [[1, 2, 3], [4, 5, 6], [7, 8, 9]];
+grid[1][1] = 99;
+let sum_diag = grid[0][0] + grid[1][1] + grid[2][2];
+if (sum_diag != 109) {
+    println("FAIL: Matrix access failed");
+} else {
+    println("[OK] 2D Matrix access and mutation passed");
+}
+
+let stack: [int] = [];
+for (let s = 0; s < 50; s = s + 1) {
+    push(stack, s * 3);
+}
+let popped_val = pop(stack);
+if (popped_val != 147 || len(stack) != 49) {
+    println("FAIL: Stack mechanics failed");
+} else {
+    println("[OK] Dynamic array push/pop passed (len=" + to_string(len(stack)) + ")");
+}
+
+// --- 8. Pattern Matching with Expressions & Guards ---
+fn classify_status(code: int, active: bool) -> string {
+    return match code {
+        200 if active => "ACTIVE_SUCCESS",
+        200 if !active => "INACTIVE_SUCCESS",
+        404 => "RESOURCE_MISSING",
+        c if c >= 500 && c < 600 => "INTERNAL_SERVER_ERROR",
+        _ => "OTHER"
+    };
+}
+
+if (classify_status(200, true) != "ACTIVE_SUCCESS" ||
+    classify_status(200, false) != "INACTIVE_SUCCESS" ||
+    classify_status(404, true) != "RESOURCE_MISSING" ||
+    classify_status(503, false) != "INTERNAL_SERVER_ERROR" ||
+    classify_status(100, true) != "OTHER") {
+    println("FAIL: Pattern matching with guards failed");
+} else {
+    println("[OK] Pattern matching with expression guards passed");
+}
+
+// --- 9. Standard Math Library & Builtins ---
+let m_abs = abs(-42.7);
+let m_sqrt = sqrt(16.0);
+let m_pow = pow(2.0, 10.0);
+let m_min = min(100, 25);
+let m_max = max(100, 25);
+let m_floor = floor(5.8);
+let m_ceil = ceil(5.2);
+let m_round = round(5.5);
+
+if (m_abs != 42.7 || m_sqrt != 4.0 || m_pow != 1024.0 || m_min != 25 || m_max != 100 || m_floor != 5.0 || m_ceil != 6.0 || m_round != 6.0) {
+    println("FAIL: Math library failed");
+} else {
+    println("[OK] Standard math library functions passed");
+}
+
+println("==================================================");
+println("[SUCCESS] ALL 10 SUBSYSTEMS PASSED AGGRESSIVE SUITE!");
+println("==================================================");

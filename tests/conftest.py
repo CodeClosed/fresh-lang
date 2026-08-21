@@ -27,8 +27,4 @@ def run_fresh():
     return runner
 
 
-@pytest.fixture
-def run_vex(run_fresh):
-    """Compatibility alias for run_fresh."""
-    return run_fresh
 

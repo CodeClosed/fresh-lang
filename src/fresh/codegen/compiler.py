@@ -531,14 +531,34 @@ class Compiler:
             case MatchExpr(keyword=kw, scrutinee=scr, arms=arms):
                 self.current_line = kw.line
                 self._compile_expr(scr)
+                self._begin_scope()
+                scr_slot = len(self.locals)
+                self.locals.append(Local(name="<scrutinee>", depth=self.scope_depth))
+
                 end_jumps: list[int] = []
 
                 for arm in arms:
-                    next_arm_jumps: list[int] = []
-                    self._emit_opcode(Opcode.OP_DUP)  # Dup scrutinee for testing
-
                     self._begin_scope()
-                    self._compile_pattern_test(arm.pattern, next_arm_jumps)
+                    next_arm_jumps: list[int] = []
+                    is_var_pattern = isinstance(arm.pattern, VariablePattern)
+                    var_slot: int | None = None
+
+                    self._emit_opcode(Opcode.OP_GET_LOCAL)
+                    self._emit_byte(scr_slot)
+
+                    match arm.pattern:
+                        case LiteralPattern(value=val):
+                            self._emit_constant(val)
+                            self._emit_opcode(Opcode.OP_EQUAL)
+                            next_arm_jumps.append(self._emit_jump(Opcode.OP_JUMP_IF_FALSE))
+                            self._emit_opcode(Opcode.OP_POP)
+                        case VariablePattern(name=vname):
+                            var_slot = len(self.locals)
+                            self.locals.append(Local(name=vname.lexeme, depth=self.scope_depth))
+                        case WildcardPattern():
+                            self._emit_opcode(Opcode.OP_POP)
+                        case _:
+                            self._emit_opcode(Opcode.OP_POP)
 
                     if arm.guard:
                         self._compile_expr(arm.guard)
@@ -546,22 +566,37 @@ class Compiler:
                         self._emit_opcode(Opcode.OP_POP)
 
                     self._compile_expr(arm.body)
-                    self.scope_depth -= 1
-                    while self.locals and self.locals[-1].depth > self.scope_depth:
-                        self.locals.pop()
+
+                    if is_var_pattern and var_slot is not None:
+                        self._emit_opcode(Opcode.OP_SET_LOCAL)
+                        self._emit_byte(var_slot)
+                        self._emit_opcode(Opcode.OP_POP)
 
                     end_jumps.append(self._emit_jump(Opcode.OP_JUMP))
 
                     for j in next_arm_jumps:
                         self._patch_jump(j)
-                    self._emit_opcode(Opcode.OP_POP)  # Clean up failed test value
+                    self._emit_opcode(Opcode.OP_POP)
+                    if is_var_pattern:
+                        self._emit_opcode(Opcode.OP_POP)
 
-                self._emit_opcode(Opcode.OP_POP)  # Pop original scrutinee
+                    while self.locals and self.locals[-1].depth > self.scope_depth - 1:
+                        self.locals.pop()
+                    self.scope_depth -= 1
+
                 self._emit_opcode(Opcode.OP_NIL)
-
 
                 for j in end_jumps:
                     self._patch_jump(j)
+
+                self._emit_opcode(Opcode.OP_SET_LOCAL)
+                self._emit_byte(scr_slot)
+                self._emit_opcode(Opcode.OP_POP)
+
+                while self.locals and self.locals[-1].depth >= self.scope_depth:
+                    self.locals.pop()
+                self.scope_depth -= 1
+
 
             case LambdaExpr(keyword=kw, params=params, return_type=_, body=body):
                 self.current_line = kw.line

@@ -108,11 +108,4 @@ class FreshCodegenError(FreshError):
     pass
 
 
-# Backward compatibility aliases
-VexError = FreshError
-VexSyntaxError = FreshSyntaxError
-VexTypeError = FreshTypeError
-VexRuntimeError = FreshRuntimeError
-VexNameError = FreshNameError
-VexCodegenError = FreshCodegenError
 

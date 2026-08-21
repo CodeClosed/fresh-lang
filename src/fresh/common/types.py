@@ -81,10 +81,12 @@ class FreshArray(FreshType):
 class FreshFunction(FreshType):
     """Function type: fn(param_types) -> return_type."""
 
-    param_types: list[FreshType] = field(default_factory=list)
+    param_types: list[FreshType] | None = None
     return_type: FreshType | None = None
 
     def __repr__(self) -> str:
+        if self.param_types is None:
+            return "fn"
         params = ", ".join(repr(t) for t in self.param_types)
         ret = f" -> {self.return_type!r}" if self.return_type else ""
         return f"fn({params}){ret}"
@@ -94,7 +96,11 @@ class FreshFunction(FreshType):
             return True
         if not isinstance(other, FreshFunction):
             return False
-        param_match = not self.param_types or self.param_types == other.param_types
+        param_match = (
+            self.param_types is None
+            or other.param_types is None
+            or self.param_types == other.param_types
+        )
         return_match = (
             self.return_type is None
             or other.return_type is None
@@ -103,7 +109,9 @@ class FreshFunction(FreshType):
         return param_match and return_match
 
     def __hash__(self) -> int:
-        return hash(("fn", tuple(self.param_types), self.return_type))
+        params_tuple = tuple(self.param_types) if self.param_types is not None else None
+        return hash(("fn", params_tuple, self.return_type))
+
 
 
 @dataclass
@@ -138,14 +146,3 @@ class FreshAny(FreshType):
         return hash("any")
 
 
-# Backward compatibility aliases
-VexType = FreshType
-VexInt = FreshInt
-VexFloat = FreshFloat
-VexBool = FreshBool
-VexString = FreshString
-VexNil = FreshNil
-VexArray = FreshArray
-VexFunction = FreshFunction
-VexStruct = FreshStruct
-VexAny = FreshAny

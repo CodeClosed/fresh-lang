@@ -25,6 +25,9 @@ htmlcov/
 
 # Scratch & Temporary outputs
 stress_test_temp.txt
+fresh_demo_output.txt
+vex_demo_output.txt
+
 *.exe
 *.obj
 *.o

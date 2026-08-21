@@ -31,9 +31,9 @@ class GarbageCollector:
         if (
             self.stress_mode
             or os.environ.get("FRESH_GC_STRESS") == "1"
-            or os.environ.get("VEX_GC_STRESS") == "1"
             or self.bytes_allocated > self.next_gc
         ):
+
             self.collect_garbage()
         self.vm.objects.append(obj)
         return obj
