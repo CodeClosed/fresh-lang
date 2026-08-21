@@ -2,18 +2,17 @@
 
 import os
 import tempfile
-import pytest
-from pathlib import Path
 
-from fresh.pipeline import run_source
-from fresh.formatter import FreshFormatter
-from fresh.analyzer.type_checker import TypeChecker
+import pytest
+
 from fresh.analyzer.resolver import Resolver
-from fresh.lexer.scanner import Scanner
-from fresh.parser.parser import Parser
+from fresh.analyzer.type_checker import TypeChecker
 from fresh.codegen.c_transpiler import CTranspiler
 from fresh.common.errors import FreshError
-
+from fresh.formatter import FreshFormatter
+from fresh.lexer.scanner import Scanner
+from fresh.parser.parser import Parser
+from fresh.pipeline import run_source
 
 STRESS_PROGRAM = """
 // =========================================================================
