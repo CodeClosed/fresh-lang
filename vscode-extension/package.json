@@ -4,9 +4,10 @@
   "description": "Language support, syntax highlighting, and custom file icons for the Fresh programming language.",
   "version": "0.1.0",
   "publisher": "fresh-lang",
-  "activationEvents": [
-    "*"
-  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/CodeClosed/fresh-lang.git"
+  },
   "icon": "icon.png",
   "engines": {
     "vscode": "^1.75.0"
