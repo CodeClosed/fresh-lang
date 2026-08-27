@@ -85,3 +85,59 @@ To guarantee maximum score and demonstration appeal during your project evaluati
 3. **Benchmarking & Differential Verification:**
    - Run differential VM vs Native GCC execution tests to prove 100% behavioral parity.
    - Run GC stress tests (`FRESH_GC_STRESS=1`) to prove memory reclamation soundness.
+
+---
+
+## 5. End-to-End Application Lifecycle (Hands-On Guide)
+
+Here is how developers interact with Fresh projects from creation to binary deployment:
+
+### 1. Initializing a Project (`fresh init`)
+```bash
+fresh init myapp
+# (or: python -m fresh init myapp)
+```
+Creates:
+- `myapp/fresh.toml` (manifest)
+- `myapp/src/main.fresh` (entry source)
+- `myapp/tests/test_basic.fresh` (test suite)
+
+### 2. Running Source Code (`fresh run`)
+Executes directly on the bytecode VM:
+```bash
+fresh run myapp/src/main.fresh
+```
+
+### 3. Static Type Analysis (`fresh check`)
+Validates syntax and types without running:
+```bash
+fresh check myapp/src/main.fresh
+```
+
+### 4. Code Formatting (`fresh fmt`)
+Auto-formats to Fresh style standards:
+```bash
+# Auto-format in place:
+fresh fmt myapp/src/main.fresh
+
+# Verify formatting for CI/CD:
+fresh fmt --check myapp/src/main.fresh
+```
+
+### 5. Compiling to Native Machine Binary (`fresh build`)
+Transpiles to C99 and links via GCC/Clang/MSVC:
+```bash
+fresh build myapp
+```
+Produces:
+- `myapp/build/main.c`
+- `myapp/build/myapp.exe` (Windows) or `myapp/build/myapp` (Linux/macOS)
+
+### 6. Executing Native Binary
+```bash
+# Windows
+.\myapp\build\myapp.exe
+
+# Linux / macOS
+./myapp/build/myapp
+```

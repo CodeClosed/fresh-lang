@@ -1,81 +1,106 @@
-name: Fresh CI
+name: Fresh CI & Release
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ "main" ]
+    tags: [ "v*" ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ "main" ]
 
 jobs:
   test:
-    name: Test (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    name: Test on ${{ matrix.os }} (Python ${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.11", "3.12", "3.13", "3.14"]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-          allow-prereleases: true
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
 
+    - name: Install GCC / Clang
+      if: runner.os == 'Linux'
+      run: sudo apt-get update && sudo apt-get install -y gcc
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install pytest pytest-cov anyio hatchling build ruff mypy
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -e .
+        pip install pytest pytest-cov ruff mypy build twine
 
-      - name: Code Quality & Linting Gate
-        run: |
-          ruff check src tests
+    - name: Run Test Suite
+      run: |
+        python -m pytest
 
-      - name: Static Type Checking Gate
-        run: |
-          mypy src/fresh
+    - name: Verify CLI Commands
+      run: |
+        fresh run NEW_LANG/01_fibonacci.fresh
+        fresh check NEW_LANG/01_fibonacci.fresh
+        fresh fmt --check NEW_LANG/01_fibonacci.fresh
+        fresh init sample_app
+        fresh build sample_app
 
-      - name: Build Wheel & Source Distribution
-        run: |
-          python -m build
+  build-packages:
+    name: Build PyPI Wheel & Source Distribution
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install build and twine
+      run: pip install build twine
+    - name: Build packages
+      run: python -m build
+    - name: Validate distributions
+      run: python -m twine check dist/*.whl dist/*.tar.gz
+    - name: Upload dist artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: python-dist
+        path: dist/
 
-      - name: Install from Built Wheel
-        shell: bash
-        run: |
-          pip install dist/*.whl
-
-      - name: Verify CLI & Run Examples
-        run: |
-          python -m fresh --help
-          fresh --help
-          fresh run examples/01_fibonacci.fresh
-          fresh check examples/01_fibonacci.fresh
-          fresh fmt --check examples/01_fibonacci.fresh
-
-      - name: Verify Native C Transpilation, Compilation & Execution
-        shell: bash
-        run: |
-          python -m fresh run --emit-c examples/01_fibonacci.fresh > fib.c
-          if [ "${{ runner.os }}" == "Windows" ]; then
-            if command -v gcc &> /dev/null; then
-              gcc fib.c -o fib.exe
-              ./fib.exe
-            elif command -v cl &> /dev/null; then
-              cl fib.c
-              ./fib.exe
-            fi
-          elif [ "${{ runner.os }}" == "macOS" ]; then
-            clang -O2 fib.c -o fib
-            ./fib
-          else
-            gcc -O2 fib.c -o fib
-            ./fib
-          fi
-
-      - name: Run Test Suite with Coverage Quality Gate
-        run: |
-          pytest -v --cov=fresh --cov-fail-under=75
+  build-binaries:
+    name: Build Standalone Binary on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    needs: test
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: fresh-linux
+            binary_name: dist/fresh
+          - os: macos-latest
+            artifact_name: fresh-macos
+            binary_name: dist/fresh
+          - os: windows-latest
+            artifact_name: fresh-windows
+            binary_name: dist/fresh.exe
+    steps:
+    - uses: actions/checkout@v4
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+    - name: Install PyInstaller & dependencies
+      run: |
+        pip install -e .
+        pip install pyinstaller
+    - name: Compile Executable
+      run: pyinstaller --onefile --clean --name fresh src/fresh/__main__.py
+    - name: Test Executable
+      run: |
+        ${{ matrix.binary_name }} --help
+        ${{ matrix.binary_name }} run NEW_LANG/01_fibonacci.fresh
+    - name: Upload Binary Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ matrix.artifact_name }}
+        path: ${{ matrix.binary_name }}

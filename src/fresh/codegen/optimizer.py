@@ -26,32 +26,94 @@ class Optimizer:
         return chunk
 
     def _peephole_pass(self, chunk: Chunk) -> Chunk:
-        """Peephole optimizations (e.g. OP_SET_LOCAL x; OP_GET_LOCAL x -> OP_SET_LOCAL x; OP_DUP)."""
+        """Peephole optimizations with jump target recalculation."""
+        old_code = chunk.code
+        n = len(old_code)
+        if n == 0:
+            return chunk
+
         new_code: list[int] = []
         new_lines: list[int] = []
+        old_to_new: list[int] = [0] * (n + 1)
         i = 0
-        n = len(chunk.code)
 
         while i < n:
+            old_to_new[i] = len(new_code)
+
             # Pattern: OP_SET_LOCAL slot; OP_GET_LOCAL slot -> OP_SET_LOCAL slot; OP_DUP
             if (
                 i + 3 < n
-                and chunk.code[i] == Opcode.OP_SET_LOCAL
-                and chunk.code[i + 2] == Opcode.OP_GET_LOCAL
-                and chunk.code[i + 1] == chunk.code[i + 3]
+                and old_code[i] == Opcode.OP_SET_LOCAL
+                and old_code[i + 2] == Opcode.OP_GET_LOCAL
+                and old_code[i + 1] == old_code[i + 3]
             ):
-                slot = chunk.code[i + 1]
+                slot = old_code[i + 1]
                 line = chunk.lines[i]
                 new_code.append(Opcode.OP_SET_LOCAL)
                 new_code.append(slot)
                 new_code.append(Opcode.OP_DUP)
                 new_lines.extend([line, line, line])
+                old_to_new[i + 1] = old_to_new[i] + 1
+                old_to_new[i + 2] = old_to_new[i] + 2
+                old_to_new[i + 3] = old_to_new[i] + 2
                 i += 4
                 continue
 
-            new_code.append(chunk.code[i])
+            new_code.append(old_code[i])
             new_lines.append(chunk.lines[i])
             i += 1
+
+        old_to_new[n] = len(new_code)
+
+        # Fix jump offsets in new_code
+        j = 0
+        m = len(new_code)
+        while j < m:
+            op = new_code[j]
+            if op in (Opcode.OP_JUMP, Opcode.OP_JUMP_IF_FALSE):
+                if j + 2 < m:
+                    hi = new_code[j + 1]
+                    lo = new_code[j + 2]
+                    old_jump = (hi << 8) | lo
+                    # Find old source index corresponding to j
+                    old_src = next((idx for idx, nidx in enumerate(old_to_new) if nidx == j), j)
+                    old_target = old_src + 3 + old_jump
+                    if old_target <= n:
+                        new_target = old_to_new[old_target]
+                        new_jump = new_target - (j + 3)
+                        new_code[j + 1] = (new_jump >> 8) & 0xFF
+                        new_code[j + 2] = new_jump & 0xFF
+                j += 3
+            elif op == Opcode.OP_LOOP:
+                if j + 2 < m:
+                    hi = new_code[j + 1]
+                    lo = new_code[j + 2]
+                    old_jump = (hi << 8) | lo
+                    old_src = next((idx for idx, nidx in enumerate(old_to_new) if nidx == j), j)
+                    old_target = (old_src + 3) - old_jump
+                    if old_target >= 0:
+                        new_target = old_to_new[old_target]
+                        new_jump = (j + 3) - new_target
+                        new_code[j + 1] = (new_jump >> 8) & 0xFF
+                        new_code[j + 2] = new_jump & 0xFF
+                j += 3
+            elif op in (
+                Opcode.OP_CONSTANT,
+                Opcode.OP_DEFINE_GLOBAL,
+                Opcode.OP_GET_GLOBAL,
+                Opcode.OP_SET_GLOBAL,
+                Opcode.OP_GET_LOCAL,
+                Opcode.OP_SET_LOCAL,
+                Opcode.OP_GET_UPVALUE,
+                Opcode.OP_SET_UPVALUE,
+                Opcode.OP_CALL,
+                Opcode.OP_BUILD_ARRAY,
+            ):
+                j += 2
+            elif op in (Opcode.OP_STRUCT_DEF, Opcode.OP_STRUCT_NEW):
+                j += 3
+            else:
+                j += 1
 
         chunk.code = new_code
         chunk.lines = new_lines

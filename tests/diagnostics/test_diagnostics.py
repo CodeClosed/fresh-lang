@@ -60,11 +60,11 @@ def test_type_error_invalid_binary_operator():
     assert "Operator '-' not supported" in str(err)
 
 
-def test_type_error_invalid_if_condition():
-    source = "if (42) { let a = 1; }"
+def test_type_error_call_non_function():
+    source = "let x = 42; x();"
     with pytest.raises(FreshTypeError) as excinfo:
-        run_source(source, filename="if_cond.fresh")
+        run_source(source, filename="invalid_call.fresh")
     err = excinfo.value
     assert isinstance(err, FreshError)
-    assert "If condition must be a boolean" in str(err)
+    assert "Cannot call non-function type" in str(err)
 

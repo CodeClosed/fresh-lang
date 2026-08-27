@@ -62,19 +62,61 @@ class FunctionType(Enum):
     LAMBDA = auto()
 
 
+BUILTINS = {
+    "print",
+    "println",
+    "input",
+    "read_int",
+    "len",
+    "push",
+    "pop",
+    "clock",
+    "type",
+    "to_string",
+    "to_int",
+    "to_float",
+    "read_file",
+    "write_file",
+    "file_exists",
+    "abs",
+    "sqrt",
+    "pow",
+    "min",
+    "max",
+    "floor",
+    "ceil",
+    "round",
+}
+
+
 class Resolver:
     """AST Visitor that resolves variable declarations and scopes."""
 
     def __init__(self, filename: str = "<stdin>") -> None:
         self.filename = filename
-        self.scopes: list[dict[str, bool]] = [{}]  # Start with global scope map
+        # Global scope with standard library built-ins pre-populated
+        global_scope = {name: True for name in BUILTINS}
+        self.scopes: list[dict[str, bool]] = [global_scope]
         self.current_function: FunctionType = FunctionType.NONE
         self.loop_depth: int = 0
         # Map AST node id to resolved scope distance / metadata
         self.locals: dict[int, int] = {}
 
     def resolve_program(self, statements: list[Stmt]) -> None:
-        """Resolve all statements in a program."""
+        """Resolve all statements in a program with top-level declaration pre-pass."""
+        # Pass 1: Pre-declare all top-level functions and structs
+        for stmt in statements:
+            match stmt:
+                case FnDeclStmt(name=name):
+                    self._declare(name)
+                    self._define(name)
+                case StructDeclStmt(name=name):
+                    self._declare(name)
+                    self._define(name)
+                case _:
+                    pass
+
+        # Pass 2: Full resolution
         for stmt in statements:
             self._resolve_stmt(stmt)
 
@@ -84,17 +126,18 @@ class Resolver:
         match stmt:
             case VarDeclStmt(name=name, initializer=init):
                 self._declare(name)
-                self._resolve_expr(init)
+                if init is not None:
+                    self._resolve_expr(init)
                 self._define(name)
 
             case FnDeclStmt(name=name, params=params, body=body):
-                self._declare(name)
-                self._define(name)
+                if len(self.scopes) > 1:
+                    self._declare(name)
+                    self._define(name)
                 self._resolve_function(params, body, FunctionType.FUNCTION)
 
-            case StructDeclStmt(name=name):
-                self._declare(name)
-                self._define(name)
+            case StructDeclStmt():
+                pass
 
             case BlockStmt(statements=stmts):
                 self._begin_scope()
@@ -271,7 +314,9 @@ class Resolver:
         func_type: FunctionType,
     ) -> None:
         enclosing_func = self.current_function
+        enclosing_loop_depth = self.loop_depth
         self.current_function = func_type
+        self.loop_depth = 0
 
         self._begin_scope()
         for param in params:
@@ -282,6 +327,7 @@ class Resolver:
             self._resolve_stmt(stmt)
 
         self._end_scope()
+        self.loop_depth = enclosing_loop_depth
         self.current_function = enclosing_func
 
     def _begin_scope(self) -> None:
@@ -314,3 +360,10 @@ class Resolver:
                 depth = len(self.scopes) - 1 - i
                 self.locals[id(expr)] = depth
                 return
+
+        raise FreshNameError(
+            message=f"Undefined variable '{name.lexeme}'.",
+            line=name.line,
+            column=name.column,
+            filename=self.filename,
+        )

@@ -65,3 +65,48 @@ def test_spec_section_10_stdlib_math_and_builtins(run_fresh):
     output = run_fresh(source)
     assert output.strip().splitlines() == ["3", "30", "42", "5", "10"]
 
+
+def test_spec_trailing_commas(run_fresh):
+    source = """
+    let arr = [1, 2, 3,];
+    println(len(arr));
+    """
+    output = run_fresh(source)
+    assert output.strip() == "3"
+
+
+def test_spec_truthiness(run_fresh):
+    source = """
+    if (1) {
+        println("number is truthy");
+    }
+    if ("hello") {
+        println("string is truthy");
+    }
+    """
+    output = run_fresh(source)
+    assert output.strip().splitlines() == ["number is truthy", "string is truthy"]
+
+
+def test_spec_array_type_promotion(run_fresh):
+    source = """
+    let arr = [1, 2.5, 3];
+    println(len(arr));
+    """
+    output = run_fresh(source)
+    assert output.strip() == "3"
+
+
+def test_spec_forward_reference(run_fresh):
+    source = """
+    fn caller() -> int {
+        return target();
+    }
+    fn target() -> int {
+        return 42;
+    }
+    println(caller());
+    """
+    output = run_fresh(source)
+    assert output.strip() == "42"
+

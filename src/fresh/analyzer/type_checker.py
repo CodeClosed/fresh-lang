@@ -91,10 +91,63 @@ class TypeChecker:
         self.struct_defs: dict[str, FreshStruct] = {}
         self.current_return_type: FreshType | None = None
         self.node_types: dict[int, FreshType] = {}
+        self._init_builtins()
+
+    def _init_builtins(self) -> None:
+        """Register built-in function signatures in global scope."""
+        builtins: dict[str, FreshFunction] = {
+            "print": FreshFunction(param_types=None, return_type=FreshNil()),
+            "println": FreshFunction(param_types=None, return_type=FreshNil()),
+            "input": FreshFunction(param_types=None, return_type=FreshString()),
+            "read_int": FreshFunction(param_types=[], return_type=FreshInt()),
+            "len": FreshFunction(param_types=[FreshAny()], return_type=FreshInt()),
+            "push": FreshFunction(param_types=[FreshAny(), FreshAny()], return_type=FreshNil()),
+            "pop": FreshFunction(param_types=[FreshAny()], return_type=FreshAny()),
+            "clock": FreshFunction(param_types=[], return_type=FreshFloat()),
+            "type": FreshFunction(param_types=[FreshAny()], return_type=FreshString()),
+            "to_string": FreshFunction(param_types=[FreshAny()], return_type=FreshString()),
+            "to_int": FreshFunction(param_types=[FreshAny()], return_type=FreshInt()),
+            "to_float": FreshFunction(param_types=[FreshAny()], return_type=FreshFloat()),
+            "read_file": FreshFunction(param_types=[FreshString()], return_type=FreshString()),
+            "write_file": FreshFunction(param_types=[FreshString(), FreshAny()], return_type=FreshBool()),
+            "file_exists": FreshFunction(param_types=[FreshString()], return_type=FreshBool()),
+            "abs": FreshFunction(param_types=[FreshAny()], return_type=FreshAny()),
+            "sqrt": FreshFunction(param_types=[FreshFloat()], return_type=FreshFloat()),
+            "pow": FreshFunction(param_types=[FreshFloat(), FreshFloat()], return_type=FreshFloat()),
+            "min": FreshFunction(param_types=[FreshAny(), FreshAny()], return_type=FreshAny()),
+            "max": FreshFunction(param_types=[FreshAny(), FreshAny()], return_type=FreshAny()),
+            "floor": FreshFunction(param_types=[FreshFloat()], return_type=FreshInt()),
+            "ceil": FreshFunction(param_types=[FreshFloat()], return_type=FreshInt()),
+            "round": FreshFunction(param_types=[FreshFloat()], return_type=FreshInt()),
+        }
+        for name, fn_type in builtins.items():
+            self.current_scope.define(name, Symbol(name=name, type=fn_type, is_defined=True))
 
     def check_program(self, statements: list[Stmt]) -> TypedProgram:
         """Type check a full program and return canonical TypedProgram IR."""
         self.node_types.clear()
+
+        # Pass 1: Pre-register top-level struct declarations and function signatures
+        for stmt in statements:
+            match stmt:
+                case StructDeclStmt(name=name, fields=fields):
+                    field_dict: dict[str, FreshType] = {}
+                    for f in fields:
+                        field_dict[f.name.lexeme] = self._resolve_type_annotation(f.type_annotation)
+                    struct_type = FreshStruct(name=name.lexeme, fields=field_dict)
+                    self.struct_defs[name.lexeme] = struct_type
+                    self.current_scope.define(name.lexeme, Symbol(name=name.lexeme, type=struct_type, is_defined=True))
+
+                case FnDeclStmt(name=name, params=params, return_type=rt):
+                    param_types = [self._resolve_type_annotation(p.type_annotation) for p in params]
+                    ret_type = self._resolve_type_annotation(rt) if rt else FreshNil()
+                    fn_type = FreshFunction(param_types=param_types, return_type=ret_type)
+                    self.current_scope.define(name.lexeme, Symbol(name=name.lexeme, type=fn_type, is_defined=True))
+
+                case _:
+                    pass
+
+        # Pass 2: Check all statements
         for stmt in statements:
             self._check_stmt(stmt)
 
@@ -109,7 +162,7 @@ class TypeChecker:
     def _check_stmt(self, stmt: Stmt) -> None:
         match stmt:
             case VarDeclStmt(name=name, type_annotation=ta, initializer=init):
-                init_type = self._check_expr(init)
+                init_type = self._check_expr(init) if init is not None else FreshNil()
                 declared_type = self._resolve_type_annotation(ta) if ta else None
 
                 if declared_type:
@@ -164,15 +217,8 @@ class TypeChecker:
             case ExprStmt(expression=expr):
                 self._check_expr(expr)
 
-            case IfStmt(condition=cond, then_branch=then_b, else_branch=else_b):
-                cond_type = self._check_expr(cond)
-                if not isinstance(cond_type, (FreshBool, FreshAny)):
-                    raise FreshTypeError(
-                        message=f"If condition must be a boolean, got '{cond_type}'.",
-                        line=0,
-                        column=0,
-                        filename=self.filename,
-                    )
+            case IfStmt(keyword=keyword, condition=cond, then_branch=then_b, else_branch=else_b):
+                self._check_expr(cond)
                 self._push_scope()
                 for s in then_b:
                     self._check_stmt(s)
@@ -184,15 +230,8 @@ class TypeChecker:
                         self._check_stmt(s)
                     self._pop_scope()
 
-            case WhileStmt(condition=cond, body=body):
-                cond_type = self._check_expr(cond)
-                if not isinstance(cond_type, (FreshBool, FreshAny)):
-                    raise FreshTypeError(
-                        message=f"While condition must be a boolean, got '{cond_type}'.",
-                        line=0,
-                        column=0,
-                        filename=self.filename,
-                    )
+            case WhileStmt(keyword=keyword, condition=cond, body=body):
+                self._check_expr(cond)
                 self._push_scope()
                 for s in body:
                     self._check_stmt(s)
@@ -203,14 +242,7 @@ class TypeChecker:
                 if init:
                     self._check_stmt(init)
                 if cond:
-                    cond_type = self._check_expr(cond)
-                    if not isinstance(cond_type, (FreshBool, FreshAny)):
-                        raise FreshTypeError(
-                            message=f"For loop condition must be a boolean, got '{cond_type}'.",
-                            line=0,
-                            column=0,
-                            filename=self.filename,
-                        )
+                    self._check_expr(cond)
                 if inc:
                     self._check_expr(inc)
 
@@ -298,8 +330,10 @@ class TypeChecker:
                 if op.type in (TokenType.LESS, TokenType.LESS_EQUAL, TokenType.GREATER, TokenType.GREATER_EQUAL):
                     if isinstance(l_type, (FreshInt, FreshFloat, FreshAny)) and isinstance(r_type, (FreshInt, FreshFloat, FreshAny)):
                         return FreshBool()
+                    if isinstance(l_type, (FreshString, FreshAny)) and isinstance(r_type, (FreshString, FreshAny)):
+                        return FreshBool()
                     raise FreshTypeError(
-                        message=f"Comparison '{op.lexeme}' requires numeric types, got '{l_type}' and '{r_type}'.",
+                        message=f"Comparison '{op.lexeme}' requires numeric or string types, got '{l_type}' and '{r_type}'.",
                         line=op.line,
                         column=op.column,
                         filename=self.filename,
@@ -308,15 +342,8 @@ class TypeChecker:
                 return FreshAny()
 
             case LogicalExpr(left=l, operator=op, right=r):
-                l_type = self._check_expr(l)
-                r_type = self._check_expr(r)
-                if not isinstance(l_type, (FreshBool, FreshAny)) or not isinstance(r_type, (FreshBool, FreshAny)):
-                    raise FreshTypeError(
-                        message=f"Logical operator '{op.lexeme}' requires boolean operands.",
-                        line=op.line,
-                        column=op.column,
-                        filename=self.filename,
-                    )
+                self._check_expr(l)
+                self._check_expr(r)
                 return FreshBool()
 
             case UnaryExpr(operator=op, operand=operand):
@@ -335,14 +362,7 @@ class TypeChecker:
                         filename=self.filename,
                     )
                 if op.type == TokenType.BANG:
-                    if isinstance(op_type, (FreshBool, FreshAny)):
-                        return FreshBool()
-                    raise FreshTypeError(
-                        message=f"Unary '!' requires boolean operand, got '{op_type}'.",
-                        line=op.line,
-                        column=op.column,
-                        filename=self.filename,
-                    )
+                    return FreshBool()
                 return FreshAny()
 
             case CallExpr(callee=callee, paren=paren, arguments=args):
@@ -365,9 +385,8 @@ class TypeChecker:
                                     line=paren.line,
                                     column=paren.column,
                                     filename=self.filename,
-                                )
+                                    )
                     return callee_type.return_type or FreshAny()
-
 
                 if isinstance(callee_type, FreshAny):
                     return FreshAny()
@@ -382,17 +401,23 @@ class TypeChecker:
             case ArrayExpr(bracket=bracket, elements=elems):
                 if not elems:
                     return FreshArray(element_type=FreshAny())
-                first_type = self._check_expr(elems[0])
-                for elem in elems[1:]:
-                    etype = self._check_expr(elem)
-                    if not self._types_compatible(first_type, etype):
+                elem_types = [self._check_expr(e) for e in elems]
+                # Compute LUB for numbers
+                has_float = any(isinstance(t, FreshFloat) for t in elem_types)
+                if has_float and all(isinstance(t, (FreshInt, FreshFloat, FreshAny)) for t in elem_types):
+                    target_type: FreshType = FreshFloat()
+                else:
+                    target_type = elem_types[0]
+
+                for elem_t in elem_types:
+                    if not self._types_compatible(target_type, elem_t):
                         raise FreshTypeError(
-                            message=f"Array element type mismatch: expected '{first_type}', got '{etype}'.",
+                            message=f"Array element type mismatch: expected '{target_type}', got '{elem_t}'.",
                             line=bracket.line,
                             column=bracket.column,
                             filename=self.filename,
                         )
-                return FreshArray(element_type=first_type)
+                return FreshArray(element_type=target_type)
 
             case IndexExpr(obj=obj, bracket=bracket, index=idx):
                 obj_type = self._check_expr(obj)
@@ -443,7 +468,15 @@ class TypeChecker:
                         )
                     return val_type
 
-                return FreshAny()
+                if isinstance(obj_type, FreshAny):
+                    return val_type
+
+                raise FreshTypeError(
+                    message=f"Cannot index non-array type '{obj_type}'.",
+                    line=bracket.line,
+                    column=bracket.column,
+                    filename=self.filename,
+                )
 
             case FieldAccessExpr(obj=obj, name=name):
                 obj_type = self._check_expr(obj)
@@ -485,7 +518,14 @@ class TypeChecker:
                             filename=self.filename,
                         )
                     return val_type
-                return FreshAny()
+                if isinstance(obj_type, FreshAny):
+                    return val_type
+                raise FreshTypeError(
+                    message=f"Type '{obj_type}' has no fields.",
+                    line=name.line,
+                    column=name.column,
+                    filename=self.filename,
+                )
 
             case StructLiteralExpr(name=name, fields=fields):
                 struct_def = self.struct_defs.get(name.lexeme)
@@ -497,6 +537,14 @@ class TypeChecker:
                         filename=self.filename,
                     )
                 provided_fields = {fname.lexeme: self._check_expr(fval) for fname, fval in fields}
+                for fname in provided_fields:
+                    if fname not in struct_def.fields:
+                        raise FreshTypeError(
+                            message=f"Unrecognized field '{fname}' in struct '{name.lexeme}'.",
+                            line=name.line,
+                            column=name.column,
+                            filename=self.filename,
+                        )
                 for fname, ftype in struct_def.fields.items():
                     if fname not in provided_fields:
                         raise FreshTypeError(
@@ -515,25 +563,33 @@ class TypeChecker:
                         )
                 return struct_def
 
-            case MatchExpr(scrutinee=scr, arms=arms):
+            case MatchExpr(keyword=keyword, scrutinee=scr, arms=arms):
                 scr_type = self._check_expr(scr)
                 body_types: list[FreshType] = []
                 for arm in arms:
                     self._push_scope()
                     self._check_pattern(arm.pattern, scr_type)
                     if arm.guard:
-                        gtype = self._check_expr(arm.guard)
-                        if not isinstance(gtype, (FreshBool, FreshAny)):
-                            raise FreshTypeError(
-                                message=f"Match guard must be a boolean, got '{gtype}'.",
-                                line=0,
-                                column=0,
-                                filename=self.filename,
-                            )
+                        self._check_expr(arm.guard)
                     body_types.append(self._check_expr(arm.body))
                     self._pop_scope()
 
-                return body_types[0] if body_types else FreshNil()
+                if not body_types:
+                    return FreshNil()
+
+                unified = body_types[0]
+                for bt in body_types[1:]:
+                    if not self._types_compatible(unified, bt):
+                        if self._types_compatible(bt, unified):
+                            unified = bt
+                        else:
+                            raise FreshTypeError(
+                                message=f"Match arm return type mismatch: expected '{unified}', got '{bt}'.",
+                                line=keyword.line,
+                                column=keyword.column,
+                                filename=self.filename,
+                            )
+                return unified
 
             case LambdaExpr(params=params, return_type=rt, body=body):
                 param_types = [self._resolve_type_annotation(p.type_annotation) for p in params]
@@ -570,7 +626,9 @@ class TypeChecker:
 
     # ── Helpers ───────────────────────────────────────────────
 
-    def _resolve_type_annotation(self, ta: TypeAnnotation) -> FreshType:
+    def _resolve_type_annotation(self, ta: TypeAnnotation | None) -> FreshType:
+        if ta is None:
+            return FreshAny()
         if ta.element_type is not None:
             return FreshArray(element_type=self._resolve_type_annotation(ta.element_type))
 

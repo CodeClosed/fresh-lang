@@ -478,6 +478,13 @@ class Compiler:
 
             case CallExpr(callee=callee, paren=paren, arguments=args):
                 self.current_line = paren.line
+                if len(args) > 255:
+                    raise FreshSyntaxError(
+                        message="Cannot have more than 255 arguments in function call.",
+                        line=paren.line,
+                        column=paren.column,
+                        filename=self.filename,
+                    )
                 self._compile_expr(callee)
                 for arg in args:
                     self._compile_expr(arg)
@@ -486,6 +493,13 @@ class Compiler:
 
             case ArrayExpr(bracket=bracket, elements=elems):
                 self.current_line = bracket.line
+                if len(elems) > 255:
+                    raise FreshSyntaxError(
+                        message="Cannot have more than 255 elements in array literal.",
+                        line=bracket.line,
+                        column=bracket.column,
+                        filename=self.filename,
+                    )
                 for elem in elems:
                     self._compile_expr(elem)
                 self._emit_opcode(Opcode.OP_BUILD_ARRAY)

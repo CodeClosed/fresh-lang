@@ -9,8 +9,9 @@
 </p>
 
 <p align="center">
+  <a href="https://pypi.org/project/fresh-lang/"><img src="https://img.shields.io/pypi/v/fresh-lang.svg?color=blue&label=PyPI%20package" alt="PyPI version" /></a>
   <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python" alt="Python Versions" />
-  <img src="https://img.shields.io/badge/Tests-93%20Passing-brightgreen?logo=pytest" alt="Test Status" />
+  <img src="https://img.shields.io/badge/Tests-90%20Passing-brightgreen?logo=pytest" alt="Test Status" />
   <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
   <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platforms" />
 </p>
@@ -19,7 +20,7 @@
 
 ## 📑 Table of Contents
 
-- [🚀 Quickstart in 30 Seconds](#-quickstart-in-30-seconds)
+- [🚀 Quickstart & Installation](#-quickstart--installation)
 - [🌟 Key Highlights & Language Design](#-key-highlights--language-design)
 - [🏗 Architecture & Compiler Pipeline](#-architecture--compiler-pipeline)
 - [💻 Command-Line Interface (CLI)](#-command-line-interface-cli)
@@ -32,10 +33,17 @@
 
 ---
 
-## 🚀 Quickstart in 30 Seconds
+## 🚀 Quickstart & Installation
 
-### 1. Installation
-Clone the repository and install dependencies:
+### Option 1: Install from PyPI (Recommended)
+
+Anyone on **Windows, macOS, or Linux** can install Fresh globally with one command:
+
+```bash
+pip install fresh-lang
+```
+
+### Option 2: Clone from GitHub
 
 ```bash
 git clone https://github.com/CodeClosed/fresh-lang.git
@@ -43,7 +51,10 @@ cd fresh-lang
 python -m pip install -e .
 ```
 
+---
+
 ### 2. Write Your First Fresh Program
+
 Create a file named `hello.fresh`:
 
 ```fresh
@@ -57,28 +68,96 @@ println(message);
 ```
 
 ### 3. Run It!
-You can run your program using any of these simple methods:
 
 ```bash
-# Option A: Direct command (if installed via pip / venv / PATH)
+# Direct CLI command
 fresh run hello.fresh
 
-# Option B: Windows local repo wrapper (works immediately with zero setup)
-.\fresh run hello.fresh
-
-# Option C: Universal Python module (works on any machine/shell)
+# Universal Python module invocation (always works in any terminal)
 python -m fresh run hello.fresh
 ```
-
-> **Windows Tip**: If `fresh` is not recognized globally in your PowerShell, run this once:
-> ```powershell
-> [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$env:APPDATA\Python\Python314\Scripts", "User")
-> ```
-> Or simply use `.\fresh run hello.fresh`!
 
 **Output:**
 ```text
 Hello, Developer! Welcome to Fresh ⚡
+```
+
+---
+
+## 🛠️ Complete Project Workflow Walkthrough
+
+Here is the exact step-by-step lifecycle for creating, running, formatting, and compiling a Fresh application:
+
+### Step 1: Initialize a New Project
+```bash
+fresh init my_app
+# or: python -m fresh init my_app
+```
+This generates the standard project structure:
+```text
+my_app/
+├── fresh.toml             # Project manifest & configuration
+├── src/
+│   └── main.fresh         # Application entry point
+└── tests/
+    └── test_basic.fresh   # Initial test file
+```
+
+### Step 2: Run the Program (Bytecode VM)
+Run your application immediately through the optimized Fresh bytecode VM:
+```bash
+fresh run my_app/src/main.fresh
+# or: python -m fresh run my_app/src/main.fresh
+```
+**Output:**
+```text
+Hello from my_app!
+```
+
+### Step 3: Check Types & Syntax (Static Analysis)
+Verify syntax, symbol scopes, and static types without executing:
+```bash
+fresh check my_app/src/main.fresh
+# or: python -m fresh check my_app/src/main.fresh
+```
+**Output:**
+```text
+Check passed for 'my_app/src/main.fresh'.
+```
+
+### Step 4: Auto-Format Source Code
+Format files according to official Fresh style guidelines:
+```bash
+# In-place formatting:
+fresh fmt my_app/src/main.fresh
+
+# CI check (verifies formatting without modifying):
+fresh fmt --check my_app/src/main.fresh
+```
+
+### Step 5: Compile to Standalone Native Binary (C Machine Code)
+Transpile to C99 and compile with GCC/Clang/MSVC into a native binary:
+```bash
+fresh build my_app
+# or: python -m fresh build my_app
+```
+**Output:**
+```text
+Build succeeded: 'my_app/build/my_app.exe'.
+```
+
+### Step 6: Execute the Native Binary
+Run the zero-dependency compiled binary directly from your OS terminal:
+```bash
+# Windows:
+.\my_app\build\my_app.exe
+
+# Linux / macOS:
+./my_app/build/my_app
+```
+**Output:**
+```text
+Hello from my_app!
 ```
 
 

@@ -60,7 +60,10 @@ class VM:
 
     def peek(self, distance: int = 0) -> Any:
         """Peek at a value on the stack `distance` items from the top."""
-        return self.stack[self.stack_top - 1 - distance]
+        idx = self.stack_top - 1 - distance
+        if idx < 0 or idx >= self.stack_top:
+            raise FreshRuntimeError("Stack underflow on peek.")
+        return self.stack[idx]
 
     # ── Upvalue Operations ────────────────────────────────────
 
@@ -301,9 +304,11 @@ class VM:
                         upvalue_count=compiled_func.upvalue_count,
                     )
                     self.gc.allocate(obj_func)
+                    self.push(obj_func)  # Root obj_func on stack during closure allocation
 
                     closure = ObjClosure(obj_func)
                     self.gc.allocate(closure)
+                    self.pop()  # Pop temporary obj_func root
 
                     for _ in range(compiled_func.upvalue_count):
                         is_local = bool(code[frame.ip])
@@ -356,12 +361,11 @@ class VM:
                     sdef = self.struct_defs[name]
 
                     instance = ObjStructInstance(sdef)
-                    self.gc.allocate(instance)
-
                     for i in reversed(range(arg_count)):
                         instance.fields[i] = self.pop()
 
-                    self.push(instance)
+                    self.push(instance)  # Root instance on stack
+                    self.gc.allocate(instance)
 
                 case Opcode.OP_GET_FIELD:
                     field_idx = code[frame.ip]
@@ -402,8 +406,8 @@ class VM:
                         elements[i] = self.pop()
 
                     arr = ObjArray(elements)
+                    self.push(arr)  # Root arr on stack before allocating
                     self.gc.allocate(arr)
-                    self.push(arr)
 
                 case Opcode.OP_GET_INDEX:
                     index = self.pop()

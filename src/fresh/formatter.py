@@ -110,9 +110,13 @@ class FreshFormatter:
                 res += "\n".join(self._format_stmt(s, indent + 1) for s in then_b)
                 res += f"\n{pad}}}"
                 if else_b:
-                    res += " else {\n"
-                    res += "\n".join(self._format_stmt(s, indent + 1) for s in else_b)
-                    res += f"\n{pad}}}"
+                    if len(else_b) == 1 and isinstance(else_b[0], IfStmt):
+                        formatted_elif = self._format_stmt(else_b[0], indent).lstrip()
+                        res += f" else {formatted_elif}"
+                    else:
+                        res += " else {\n"
+                        res += "\n".join(self._format_stmt(s, indent + 1) for s in else_b)
+                        res += f"\n{pad}}}"
                 return res
 
             case WhileStmt(condition=cond, body=body):
@@ -147,6 +151,35 @@ class FreshFormatter:
                 return f"{pad}/* unhandled stmt {type(stmt).__name__} */"
 
 
+    def _get_expr_precedence(self, expr: Expr) -> int:
+        match expr:
+            case AssignExpr():
+                return 1
+            case LogicalExpr(operator=op):
+                return 2 if op.lexeme == "||" else 3
+            case BinaryExpr(operator=op):
+                if op.lexeme in ("==", "!="):
+                    return 4
+                if op.lexeme in ("<", "<=", ">", ">="):
+                    return 5
+                if op.lexeme in ("+", "-"):
+                    return 6
+                if op.lexeme in ("*", "/", "%"):
+                    return 7
+                return 0
+            case UnaryExpr():
+                return 8
+            case CallExpr() | IndexExpr() | IndexSetExpr() | FieldAccessExpr() | FieldSetExpr():
+                return 9
+            case _:
+                return 10
+
+    def _format_child_expr(self, child: Expr, parent_prec: int, is_right: bool = False) -> str:
+        child_prec = self._get_expr_precedence(child)
+        needs_parens = child_prec < parent_prec or (child_prec == parent_prec and is_right and parent_prec in (6, 7))
+        formatted = self._format_expr(child)
+        return f"({formatted})" if needs_parens else formatted
+
     def _format_expr(self, expr: Expr) -> str:
         match expr:
             case LiteralExpr(value=val):
@@ -168,13 +201,21 @@ class FreshFormatter:
                 return f"{name.lexeme} = {self._format_expr(val)}"
 
             case BinaryExpr(left=l, operator=op, right=r):
-                return f"{self._format_expr(l)} {op.lexeme} {self._format_expr(r)}"
+                prec = self._get_expr_precedence(expr)
+                l_str = self._format_child_expr(l, prec, is_right=False)
+                r_str = self._format_child_expr(r, prec, is_right=True)
+                return f"{l_str} {op.lexeme} {r_str}"
 
             case LogicalExpr(left=l, operator=op, right=r):
-                return f"{self._format_expr(l)} {op.lexeme} {self._format_expr(r)}"
+                prec = self._get_expr_precedence(expr)
+                l_str = self._format_child_expr(l, prec, is_right=False)
+                r_str = self._format_child_expr(r, prec, is_right=True)
+                return f"{l_str} {op.lexeme} {r_str}"
 
             case UnaryExpr(operator=op, operand=operand):
-                return f"{op.lexeme}{self._format_expr(operand)}"
+                prec = self._get_expr_precedence(expr)
+                op_str = self._format_child_expr(operand, prec, is_right=True)
+                return f"{op.lexeme}{op_str}"
 
             case CallExpr(callee=callee, arguments=args):
                 args_s = ", ".join(self._format_expr(a) for a in args)

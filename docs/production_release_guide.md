@@ -6,9 +6,14 @@ This guide details the distribution channels, packaging steps, project initializ
 
 ## 📌 1. PyPI Package (`pip install fresh-lang`)
 
-Publishing Fresh to **PyPI** (Python Package Index) allows anyone with Python installed to type `pip install fresh-lang` and immediately run `fresh run program.fresh`, `fresh check`, `fresh fmt`, and `fresh build`.
+Fresh is published on **PyPI**: [https://pypi.org/project/fresh-lang/](https://pypi.org/project/fresh-lang/).
 
-### Steps to Publish:
+Anyone on **Windows, macOS, or Linux** with Python 3.11+ installed can install and use Fresh globally:
+```bash
+pip install fresh-lang
+```
+
+### Steps to Release New Versions to PyPI:
 
 1. **Install Packaging Tools**:
    ```bash
@@ -16,22 +21,20 @@ Publishing Fresh to **PyPI** (Python Package Index) allows anyone with Python in
    ```
 
 2. **Build Source Distribution & Wheel**:
-   Run in the root directory (`NEW_LANG`):
    ```bash
    python -m build
    ```
    This generates `.whl` and `.tar.gz` files inside the `dist/` folder.
 
-3. **Upload to PyPI**:
+3. **Validate Package Metadata**:
    ```bash
-   python -m twine upload dist/*
+   python -m twine check dist/*.whl dist/*.tar.gz
    ```
 
-Once uploaded, anyone on **Windows, macOS, or Linux** can run:
-```bash
-pip install fresh-lang
-fresh run my_script.fresh
-```
+4. **Upload to PyPI**:
+   ```bash
+   python -m twine upload dist/fresh_lang-<version>*
+   ```
 
 ---
 
@@ -42,6 +45,7 @@ Fresh includes first-class project management built into the CLI:
 ### Initialize a New Project:
 ```bash
 fresh init myapp
+# or: python -m fresh init myapp
 ```
 Generates standard project structure:
 ```text
@@ -56,6 +60,7 @@ myapp/
 ### Build Native Binary:
 ```bash
 fresh build myapp
+# or: python -m fresh build myapp
 ```
 Compiles `src/main.fresh` and all imported dependencies into optimized standalone C code (`build/main.c`) and native machine code binary (`build/myapp.exe` via GCC/Clang).
 
@@ -74,7 +79,7 @@ To allow users to run the Fresh compiler without needing Python installed on the
 
 2. **Compile Single-File Executable**:
    ```bash
-   pyinstaller --onefile --name fresh src/fresh/__main__.py
+   python -m PyInstaller --onefile --noconfirm --name fresh src/fresh/__main__.py
    ```
 
 3. **Output**:
@@ -82,16 +87,24 @@ To allow users to run the Fresh compiler without needing Python installed on the
 
 ---
 
-## 🌐 4. Automated CI/CD & Test Verification
+## 🌐 4. Automated 1-Click Release Pipeline & CI/CD
 
-Whenever changes are committed, automated workflows can execute the full 12-suite test framework:
-
+### All-in-One Automated Release Script:
+To run tests, build wheels, validate with twine, and compile standalone binaries with a single command:
 ```bash
-python -m pytest
+python scripts/build_release.py
 ```
 
+### GitHub Actions CI/CD:
+Configured in `.github/workflows/ci.yml` to automatically:
+- Test on Ubuntu, Windows, and macOS across Python 3.11–3.13.
+- Build and validate wheel/sdist packages.
+- Compile native standalone binaries for all operating systems.
+
 ### Release Verification Checklist:
-- [x] All 52 unit, integration, differential, GC stress, fuzzing, and package tests passing.
+- [x] All 90 unit, integration, differential, GC stress, fuzzing, and package tests passing.
 - [x] Formatter idempotence verified (`fresh fmt --check`).
 - [x] Native C transpiler differential parity verified against GCC.
 - [x] Module import cycle detection verified.
+- [x] Wheel and tarball validated with `twine check`.
+- [x] Live PyPI package published (`fresh-lang`).

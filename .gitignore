@@ -27,6 +27,14 @@ htmlcov/
 stress_test_temp.txt
 fresh_demo_output.txt
 vex_demo_output.txt
+scratch/
+fresh.spec
+fib.c
+fib.exe
+demo_app/
+myapp/
+sample_app/
+NEW_LANG/
 
 *.exe
 *.obj

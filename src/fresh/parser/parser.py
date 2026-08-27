@@ -341,22 +341,29 @@ class Parser:
 
     def _statement(self) -> Stmt:
         """Route to the appropriate statement parser."""
-        if self._match(TokenType.IF):
-            return self._if_statement()
-        if self._match(TokenType.WHILE):
-            return self._while_statement()
-        if self._match(TokenType.FOR):
-            return self._for_statement()
-        if self._match(TokenType.RETURN):
-            return self._return_statement()
-        if self._match(TokenType.BREAK):
-            return self._break_statement()
-        if self._match(TokenType.CONTINUE):
-            return self._continue_statement()
-        if self._check(TokenType.LEFT_BRACE):
-            self._advance()
-            return BlockStmt(statements=self._block_body())
-        return self._expression_statement()
+        self.recursion_depth += 1
+        if self.recursion_depth > 200:
+            self.recursion_depth -= 1
+            raise self._error(self._peek(), "Statement nesting depth exceeded limit.")
+        try:
+            if self._match(TokenType.IF):
+                return self._if_statement()
+            if self._match(TokenType.WHILE):
+                return self._while_statement()
+            if self._match(TokenType.FOR):
+                return self._for_statement()
+            if self._match(TokenType.RETURN):
+                return self._return_statement()
+            if self._match(TokenType.BREAK):
+                return self._break_statement()
+            if self._match(TokenType.CONTINUE):
+                return self._continue_statement()
+            if self._check(TokenType.LEFT_BRACE):
+                self._advance()
+                return BlockStmt(statements=self._block_body())
+            return self._expression_statement()
+        finally:
+            self.recursion_depth -= 1
 
     def _if_statement(self) -> IfStmt:
         """Parse: ``if (cond) { ... } [else { ... } | else if ...]``"""
@@ -575,6 +582,8 @@ class Parser:
                 elements.append(self._expression())
                 if not self._match(TokenType.COMMA):
                     break
+                if self._check(TokenType.RIGHT_BRACKET):
+                    break
 
         self._consume(TokenType.RIGHT_BRACKET, "Expected ']' after array elements.")
         return ArrayExpr(bracket=bracket, elements=elements)
@@ -648,6 +657,8 @@ class Parser:
                     raise self._error(self._peek(), "Cannot have more than 255 arguments.")
                 arguments.append(self._expression())
                 if not self._match(TokenType.COMMA):
+                    break
+                if self._check(TokenType.RIGHT_PAREN):
                     break
 
         self._consume(TokenType.RIGHT_PAREN, "Expected ')' after arguments.")

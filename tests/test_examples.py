@@ -8,6 +8,10 @@ from fresh.pipeline import run_source
 
 EXAMPLES_DIR = Path(__file__).parent.parent / "examples"
 EXAMPLE_FILES = sorted(list(EXAMPLES_DIR.glob("*.fresh")))
+if not EXAMPLE_FILES:
+    root_fresh = Path(__file__).parent.parent / "all_features.fresh"
+    if root_fresh.exists():
+        EXAMPLE_FILES = [root_fresh]
 
 
 @pytest.mark.parametrize("example_path", EXAMPLE_FILES, ids=lambda p: p.name)

@@ -170,8 +170,8 @@ class CTranspiler:
             "static inline const char* fresh_to_string_str(const char* v) {",
             "    return v;",
             "}",
-            "static inline long long fresh_clock() {",
-            "    return (long long)clock();",
+            "static inline double fresh_clock() {",
+            "    return (double)clock() / (double)CLOCKS_PER_SEC;",
             "}",
             "",
         ]
