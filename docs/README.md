@@ -8,6 +8,7 @@ Welcome to the official documentation for the **Fresh Programming Language** (v0
 
 | Document | Purpose | Target Audience |
 |:---|:---|:---|
+| 📖 [**Complete Syntax Handbook**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/syntax_handbook.md) | Exhaustive, practical syntax catalog with live demo examples for every language feature. | Learners, students, presenters |
 | 📐 [**Formal Specification**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/specification.md) | Normative grammar (EBNF), lexical tokens, type system rules, and operational semantics. | Language implementers, compiler engineers |
 | 🏛 [**Compiler & VM Architecture**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/architecture.md) | End-to-end walkthrough of the 8-phase pipeline from scanner to VM and C backend. | Contributors, systems programmers |
 | 🔬 [**Comparative Analysis**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/comparison.md) | Academic architectural comparison against Python, C, Rust, and Lox with benchmark metrics. | Evaluators, researchers, academics |

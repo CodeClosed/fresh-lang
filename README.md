@@ -314,6 +314,7 @@ NEW_LANG/
 For in-depth guides, visit the [**Documentation Hub (`docs/README.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/README.md) or jump directly to:
 
 - 📘 [**Language Guide (`LANGUAGE_GUIDE.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/LANGUAGE_GUIDE.md): Complete language tutorial from variables to closures and pattern matching.
+- 📖 [**Complete Syntax Handbook (`docs/syntax_handbook.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/syntax_handbook.md): Full syntax catalog with runnable code for variables, functions, structs, arrays, match, and file I/O.
 - 📐 [**Formal Specification (`docs/specification.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/specification.md): EBNF grammar, typing rules, and operational semantics.
 - 🏛 [**Architecture Guide (`docs/architecture.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/architecture.md): Deep-dive into compiler internals, AST structures, and VM bytecode engine.
 - 🔬 [**Comparative Analysis (`docs/comparison.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/comparison.md): Architectural comparison against Python, C, Rust, and Lox.

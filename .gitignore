@@ -27,6 +27,7 @@ htmlcov/
 stress_test_temp.txt
 fresh_demo_output.txt
 test_output.txt
+demo_test_file.txt
 vex_demo_output.txt
 scratch/
 fresh.spec
