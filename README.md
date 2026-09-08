@@ -280,12 +280,15 @@ NEW_LANG/
 ├── README.md                  # Main project documentation (this file)
 ├── pyproject.toml             # Python build metadata & tool configuration
 ├── docs/                      # In-depth architectural documentation
-│   ├── FRESH_SPECIFICATION.md # Formal EBNF grammar & normative specification
-│   ├── project_guide.md       # Architecture & contributor implementation guide
-│   ├── COMPARISON.md          # Academic comparison vs Rust, Go, Python, Lua, C
-│   ├── PROS.md                # Language design rationale and benefits
-│   ├── COMPATIBILITY_AND_VERSIONING.md # Versioning & SemVer policy
-│   └── production_release_guide.md     # Packaging and release workflow
+│   ├── README.md              # Documentation Hub and Reading Paths
+│   ├── specification.md       # Normative EBNF grammar & language specification
+│   ├── architecture.md        # Compiler, VM, and C transpiler internal architecture
+│   ├── comparison.md          # Academic comparative analysis vs Python, C, Rust
+│   ├── standard_library.md    # Standard library & built-ins API reference
+│   ├── cli_and_tooling.md     # Unified CLI, fresh.toml, and VS Code manual
+│   ├── release_and_packaging.md # PyPI packaging, standalone binaries & CI/CD
+│   ├── compatibility.md       # SemVer guarantees & diagnostic error codes catalog
+│   └── presentation_guide.md  # 15-minute live demo and presentation script
 ├── examples/                  # Official runnable example programs
 ├── src/fresh/                 # Fresh compiler & runtime core package
 │   ├── analyzer/              # Semantic analysis (Resolver, Type Checker)
@@ -300,7 +303,7 @@ NEW_LANG/
 │   ├── modules.py             # Multi-file module loader and cycle detector
 │   ├── package.py             # Package manager (init & build)
 │   └── pipeline.py            # Unified end-to-end execution pipeline
-├── tests/                     # 93 automated tests across all subsystems
+├── tests/                     # 97 automated tests across all subsystems
 └── vscode-extension/          # Official VS Code syntax highlighter & icons
 ```
 
@@ -308,14 +311,17 @@ NEW_LANG/
 
 ## 📚 Documentation Index
 
-For in-depth guides, check the dedicated documents:
+For in-depth guides, visit the [**Documentation Hub (`docs/README.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/README.md) or jump directly to:
 
 - 📘 [**Language Guide (`LANGUAGE_GUIDE.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/LANGUAGE_GUIDE.md): Complete language tutorial from variables to closures and pattern matching.
-- 📐 [**Formal Specification (`docs/FRESH_SPECIFICATION.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/FRESH_SPECIFICATION.md): EBNF grammar, typing rules, and operational semantics.
-- 🏛 [**Architecture & Contributor Guide (`docs/project_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/project_guide.md): Deep-dive into compiler internals, AST structures, and VM bytecode engine.
-- ⚖️ [**Comparative Analysis (`docs/COMPARISON.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/COMPARISON.md): Architectural comparison against Rust, Go, Python, Lua, and C.
-- 💡 [**Project Advantages & Design Rationale (`docs/PROS.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/PROS.md): Why Fresh was built and key architectural strengths.
-- 🚀 [**Production & Release Guide (`docs/production_release_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/production_release_guide.md): Wheel packaging, release checklist, and distribution.
+- 📐 [**Formal Specification (`docs/specification.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/specification.md): EBNF grammar, typing rules, and operational semantics.
+- 🏛 [**Architecture Guide (`docs/architecture.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/architecture.md): Deep-dive into compiler internals, AST structures, and VM bytecode engine.
+- 🔬 [**Comparative Analysis (`docs/comparison.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/comparison.md): Architectural comparison against Python, C, Rust, and Lox.
+- 📚 [**Standard Library (`docs/standard_library.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/standard_library.md): Comprehensive API reference for all built-ins and math functions.
+- 💻 [**CLI & Developer Tooling (`docs/cli_and_tooling.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/cli_and_tooling.md): CLI commands, flags, `fresh.toml`, and VS Code extension.
+- 📦 [**Release & Packaging (`docs/release_and_packaging.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/release_and_packaging.md): PyPI packaging, standalone binary compilation, and CI/CD.
+- 🛡 [**Compatibility & Diagnostics (`docs/compatibility.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/compatibility.md): SemVer policy and diagnostic codes catalog (`[E1001]`–`[E5001]`).
+- 🎤 [**Presentation Guide (`docs/presentation_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/presentation_guide.md): 15-minute live demo script with step-by-step walkthrough.
 
 ---
 

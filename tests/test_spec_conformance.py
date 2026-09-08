@@ -1,4 +1,4 @@
-"""Conformance tests for normative code examples in docs/FRESH_SPECIFICATION.md."""
+"""Conformance tests for normative code examples in docs/specification.md."""
 
 
 
