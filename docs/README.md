@@ -16,6 +16,7 @@ Welcome to the official documentation for the **Fresh Programming Language** (v0
 | 💻 [**CLI & Developer Tooling**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/cli_and_tooling.md) | CLI subcommands (`run`, `check`, `fmt`, `build`, etc.), `fresh.toml`, and VS Code extension. | Developers, toolchain users |
 | 📦 [**Release & Packaging Guide**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/release_and_packaging.md) | PyPI distribution, standalone executable compilation, and GitHub Actions CI/CD. | Package maintainers, DevOps |
 | 🛡 [**Compatibility & Diagnostics**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/compatibility.md) | SemVer 2.0 stability guarantees, deprecation lifecycle, and error code catalog (`[E1001]`–`[E5001]`). | Production teams, integrators |
+| 🎓 [**Academic Demonstration & Defense Guide**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/demonstration.md) | In-depth presentation guide covering install, build, run, dual modes, tokens, C code, and defense Q&A. | Presenters, students, examiners |
 | 🎤 [**Presentation & Demo Guide**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/presentation_guide.md) | 15-minute live demonstration script with exact commands, code snippets, and talking points. | Presenters, speakers, instructors |
 
 ---

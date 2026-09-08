@@ -322,6 +322,7 @@ For in-depth guides, visit the [**Documentation Hub (`docs/README.md`)**](file:/
 - 💻 [**CLI & Developer Tooling (`docs/cli_and_tooling.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/cli_and_tooling.md): CLI commands, flags, `fresh.toml`, and VS Code extension.
 - 📦 [**Release & Packaging (`docs/release_and_packaging.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/release_and_packaging.md): PyPI packaging, standalone binary compilation, and CI/CD.
 - 🛡 [**Compatibility & Diagnostics (`docs/compatibility.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/compatibility.md): SemVer policy and diagnostic codes catalog (`[E1001]`–`[E5001]`).
+- 🎓 [**Demonstration & Defense Guide (`docs/demonstration.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/demonstration.md): Complete presentation guide covering install, build, run, dual modes, tokens, C code, and defense Q&A.
 - 🎤 [**Presentation Guide (`docs/presentation_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/presentation_guide.md): 15-minute live demo script with step-by-step walkthrough.
 
 ---
