@@ -7,7 +7,6 @@ from fresh.analyzer.type_checker import TypeChecker
 from fresh.codegen.c_transpiler import CTranspiler
 from fresh.lexer.scanner import Scanner
 from fresh.parser.parser import Parser
-from fresh.pipeline import run_source
 
 
 def test_benchmark_lexer_throughput():

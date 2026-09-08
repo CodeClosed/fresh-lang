@@ -41,9 +41,9 @@ jobs:
 
     - name: Verify CLI Commands
       run: |
-        fresh run NEW_LANG/01_fibonacci.fresh
-        fresh check NEW_LANG/01_fibonacci.fresh
-        fresh fmt --check NEW_LANG/01_fibonacci.fresh
+        fresh run examples/01_fibonacci.fresh
+        fresh check examples/01_fibonacci.fresh
+        fresh fmt --check examples/01_fibonacci.fresh
         fresh init sample_app
         fresh build sample_app
 

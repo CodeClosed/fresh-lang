@@ -48,7 +48,7 @@ def main() -> None:
     binary_path = ROOT_DIR / "dist" / binary_name
     if binary_path.exists():
         run_step("5. Verifying standalone binary execution", [str(binary_path), "--help"])
-        run_step("6. Running sample Fresh program with standalone binary", [str(binary_path), "run", "NEW_LANG/01_fibonacci.fresh"])
+        run_step("6. Running sample Fresh program with standalone binary", [str(binary_path), "run", "examples/01_fibonacci.fresh"])
 
     print("\n========================================")
     print(" [SUCCESS] Release build completed!")

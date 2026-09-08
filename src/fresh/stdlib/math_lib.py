@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from fresh.common.errors import FreshRuntimeError
 from fresh.vm.objects import ObjNativeFunction
