@@ -1,0 +1,19 @@
+// quick_demo.fresh - Quick Demonstration Script for Fresh Language
+
+fn fibonacci(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    }
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+fn compute_stats(name: string, count: int) {
+    println("Processing:", name);
+    let result = fibonacci(count);
+    println("Fibonacci(", count, ") =", result);
+}
+
+let user = "Professor";
+let terms = 10;
+
+compute_stats(user, terms);
