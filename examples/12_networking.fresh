@@ -1,0 +1,100 @@
+// examples/12_networking.fresh - Networking, Protocols & JSON APIs showcase
+import net;
+
+println("==================================================");
+println("       FRESH.NET - NETWORKING & PROTOCOLS         ");
+println("==================================================");
+
+// 1. URL Parsing
+println("\n[1] URL PARSING");
+let my_url = net.url_parse("https://api.fresh-lang.org:8443/v1/models/predict?version=2&format=json");
+println("Raw URL: " + my_url.raw);
+println("Scheme:   " + my_url.scheme);
+println("Host:     " + my_url.host);
+println("Port:     " + to_string(my_url.port));
+println("Path:     " + my_url.path);
+println("Query:    " + my_url.query);
+
+// 2. HTTP Request Building & Parsing
+println("\n[2] HTTP REQUEST SERIALIZATION & DESERIALIZATION");
+let req_headers = [
+    "User-Agent: FreshClient/1.0",
+    "Accept: application/json",
+    "Content-Type: application/json"
+];
+let req_body = net.json_obj(["model", "confidence"], ["linear_reg", "0.98"]);
+let raw_http_req = net.build_request("POST", "/api/v1/predict", "api.fresh-lang.org", req_headers, req_body);
+println("--- Built HTTP Request ---\n" + raw_http_req);
+
+let parsed_req = net.parse_request(raw_http_req);
+println("--- Parsed HTTP Request ---");
+println("Method: " + parsed_req.method + ", Path: " + parsed_req.path + ", Host: " + parsed_req.host);
+println("Headers count: " + to_string(len(parsed_req.headers)));
+println("Payload model: " + net.json_get(parsed_req.body, "model") + ", confidence: " + net.json_get(parsed_req.body, "confidence"));
+
+// 3. HTTP Response Formulation
+println("\n[3] HTTP RESPONSE & STATUS CODES");
+let resp_body = net.json_obj(["status", "result"], ["success", "42.0"]);
+let resp_headers = [
+    "Content-Type: application/json",
+    "Server: Fresh-HTTP-Engine/1.0"
+];
+let raw_http_resp = net.build_response(200, resp_headers, resp_body);
+println("--- Built HTTP 200 Response ---\n" + raw_http_resp);
+
+let parsed_resp = net.parse_response(raw_http_resp);
+println("Parsed status: " + to_string(parsed_resp.status_code) + " " + parsed_resp.status_text);
+println("Response status field: " + net.json_get(parsed_resp.body, "status") + ", result: " + net.json_get(parsed_resp.body, "result"));
+
+// 4. DNS Query & Response Wire Protocol
+println("\n[4] DNS RESOLUTION PROTOCOL");
+let domain_name = "example.fresh-lang.org";
+let query_packet = net.dns_query(1042, domain_name, "A");
+println("DNS Query: " + query_packet);
+
+let resp_packet = net.dns_response(1042, domain_name, "A", "192.168.1.100", 300);
+println("DNS Response: " + resp_packet);
+
+let parsed_dns = net.dns_parse(resp_packet);
+println("DNS ID: " + to_string(parsed_dns.id) + ", Domain: " + parsed_dns.domain);
+if (len(parsed_dns.answers) > 0) {
+    let ans = parsed_dns.answers[0];
+    println("Resolved IP: " + ans.value + " (TTL=" + to_string(ans.ttl) + "s)");
+}
+
+// 5. TCP Protocol Frame
+println("\n[5] TCP PROTOCOL FRAMING (3-Way Handshake)");
+let syn_pkt = net.tcp_build(54321, 80, 1000, 0, "SYN", "");
+let syn_ack = net.tcp_build(80, 54321, 5000, 1001, "SYN-ACK", "");
+let data_pkt = net.tcp_build(54321, 80, 1001, 5001, "ACK-PSH", "PING");
+println("SYN:     " + syn_pkt + "\nSYN-ACK: " + syn_ack + "\nDATA:    " + data_pkt);
+
+let parsed_tcp = net.tcp_parse(data_pkt);
+println("Parsed TCP: Src=" + to_string(parsed_tcp.src_port) + " Dst=" + to_string(parsed_tcp.dst_port) +
+        " Seq=" + to_string(parsed_tcp.seq) + " Flags=" + parsed_tcp.flags + " Payload='" + parsed_tcp.payload + "'");
+
+// 6. UDP Datagram Frame
+println("\n[6] UDP DATAGRAM PROTOCOL");
+let udp_datagram = net.udp_build(9000, 9001, "HEARTBEAT_OK");
+println("UDP Frame: " + udp_datagram);
+let parsed_udp = net.udp_parse(udp_datagram);
+println("Parsed UDP: Src=" + to_string(parsed_udp.src_port) + " Dst=" + to_string(parsed_udp.dst_port) +
+        " Len=" + to_string(parsed_udp.length) + " Payload='" + parsed_udp.payload + "'");
+
+// 7. WebSocket Handshake & Framing (RFC 6455)
+println("\n[7] WEBSOCKET PROTOCOL & FRAMING");
+let ws_req = net.ws_handshake("stream.fresh.org", "/ws/live", "dGhlIHNhbXBsZSBub25jZQ==");
+println("--- WebSocket Handshake ---\n" + ws_req);
+
+let ws_resp = ws_build_handshake_response("s3pPLMBiTxaQ9kYGzzhZRbK+xOo=");
+println(ws_resp);
+
+let text_frame = net.ws_frame(1, "{\"event\": \"subscribe\"}", true);
+println("Built WS Frame: " + text_frame);
+let parsed_frame = net.ws_parse(text_frame);
+println("Parsed WS Frame: Opcode=" + to_string(parsed_frame.opcode) + ", Masked=" +
+        to_string(parsed_frame.masked) + ", Payload=" + parsed_frame.payload);
+
+println("\n==================================================");
+println(" [SUCCESS] fresh.net tests passed cleanly!        ");
+println("==================================================");

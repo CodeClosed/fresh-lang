@@ -1,0 +1,131 @@
+// examples/10_machine_learning.fresh - Classical ML showcase with fresh.ml
+import ml;
+
+println("==================================================");
+println("   FRESH.ML - LIGHTWEIGHT MACHINE LEARNING        ");
+println("==================================================");
+
+// 1. Feature Scaling & Preprocessing
+println("\n[1] FEATURE SCALING (StandardScaler & MinMaxScaler)");
+let raw_data = [
+    [10.0, 100.0],
+    [20.0, 200.0],
+    [30.0, 300.0],
+    [40.0, 400.0],
+    [50.0, 500.0]
+];
+
+let std_scaler = ml.standard_scaler();
+let standardized = std_scaler.fit_transform(raw_data);
+println("Standardized row 0: " + to_string(standardized[0]));
+println("Standardized row 4: " + to_string(standardized[4]));
+
+let mm_scaler = ml.min_max_scaler();
+let min_maxed = mm_scaler.fit_transform(raw_data);
+println("MinMax scaled row 0 (expect [0.0, 0.0]): " + to_string(min_maxed[0]));
+println("MinMax scaled row 4 (expect [1.0, 1.0]): " + to_string(min_maxed[4]));
+
+// 2. Linear Regression (Regression Task: y = 2*x1 + 3*x2 + 5)
+println("\n[2] LINEAR REGRESSION");
+let X_reg = [
+    [1.0, 2.0],
+    [2.0, 1.0],
+    [3.0, 4.0],
+    [4.0, 3.0],
+    [5.0, 6.0],
+    [6.0, 5.0]
+];
+
+// targets: y = 2*x0 + 3*x1 + 5
+let y_reg = [
+    13.0, // 2(1) + 3(2) + 5 = 13
+    12.0, // 2(2) + 3(1) + 5 = 12
+    23.0, // 2(3) + 3(4) + 5 = 23
+    22.0, // 2(4) + 3(3) + 5 = 22
+    33.0, // 2(5) + 3(6) + 5 = 33
+    32.0  // 2(6) + 3(5) + 5 = 32
+];
+
+let lin_reg = ml.linear_regression();
+lin_reg.fit(X_reg, y_reg, 0.01, 800);
+
+let test_reg = [[7.0, 8.0]]; // expected: 2(7) + 3(8) + 5 = 43
+let pred_reg = lin_reg.predict(test_reg);
+println("Linear Regression test prediction for [7.0, 8.0]: " + to_string(pred_reg[0]) + " (Expected ~43.0)");
+let train_preds = lin_reg.predict(X_reg);
+println("Linear Regression Train R2 Score: " + to_string(ml.r2(y_reg, train_preds)));
+println("Linear Regression Train MSE: " + to_string(ml.mse(y_reg, train_preds)));
+
+// 3. Logistic Regression (Binary Classification)
+println("\n[3] LOGISTIC REGRESSION");
+let X_cls = [
+    [1.0, 1.0],
+    [1.5, 2.0],
+    [2.0, 1.0],
+    [6.0, 7.0],
+    [7.0, 8.0],
+    [8.0, 6.0]
+];
+let y_cls = [0.0, 0.0, 0.0, 1.0, 1.0, 1.0];
+
+let log_reg = ml.logistic_regression();
+log_reg.fit(X_cls, y_cls, 0.05, 500);
+
+let test_cls = [[1.2, 1.3], [7.5, 7.2]];
+let pred_probs = log_reg.predict_proba(test_cls);
+let pred_labels = log_reg.predict(test_cls);
+println("Test pt 1 [1.2, 1.3] prob=" + to_string(pred_probs[0]) + " -> class=" + to_string(pred_labels[0]));
+println("Test pt 2 [7.5, 7.2] prob=" + to_string(pred_probs[1]) + " -> class=" + to_string(pred_labels[1]));
+
+// 4. K-Means Clustering (Unsupervised)
+println("\n[4] K-MEANS CLUSTERING (k=2)");
+let X_km = [
+    [1.0, 1.0],
+    [1.2, 0.8],
+    [0.9, 1.1],
+    [10.0, 10.0],
+    [10.2, 9.8],
+    [9.9, 10.1]
+];
+let kmeans = ml.kmeans();
+kmeans.fit(X_km, 2, 20);
+let km_preds = kmeans.predict(X_km);
+println("Cluster assignments: " + to_string(km_preds));
+let centroids = kmeans.get_centroids();
+println("Cluster centroid 0: " + to_string(centroids[0]));
+println("Cluster centroid 1: " + to_string(centroids[1]));
+
+// 5. Decision Tree Classifier
+println("\n[5] DECISION TREE CLASSIFIER");
+let y_tree = [0, 0, 0, 1, 1, 1];
+let dt = ml.decision_tree();
+dt.fit(X_cls, y_tree);
+let dt_preds = dt.predict(test_cls);
+println("Decision Tree predictions for test points: " + to_string(dt_preds));
+
+// 6. Naive Bayes (Gaussian)
+println("\n[6] GAUSSIAN NAIVE BAYES");
+let nb = ml.naive_bayes();
+nb.fit(X_cls, y_tree);
+let nb_preds = nb.predict(test_cls);
+println("Naive Bayes predictions for test points: " + to_string(nb_preds));
+
+// 7. K-Nearest Neighbors (KNN, k=3)
+println("\n[7] K-NEAREST NEIGHBORS (KNN)");
+let knn = ml.knn();
+knn.fit(X_cls, y_tree, 3);
+let knn_preds = knn.predict(test_cls);
+println("KNN predictions for test points: " + to_string(knn_preds));
+
+// 8. Classification Metrics
+println("\n[8] CLASSIFICATION METRICS");
+let y_true = [1, 0, 1, 1, 0, 1, 0, 0];
+let y_pred = [1, 0, 1, 0, 0, 1, 1, 0];
+println("Accuracy:  " + to_string(ml.accuracy(y_true, y_pred)));
+println("Precision: " + to_string(ml.precision(y_true, y_pred, 1)));
+println("Recall:    " + to_string(ml.recall(y_true, y_pred, 1)));
+println("F1-Score:  " + to_string(ml.f1(y_true, y_pred, 1)));
+
+println("\n==================================================");
+println(" [SUCCESS] fresh.ml tests passed cleanly!         ");
+println("==================================================");

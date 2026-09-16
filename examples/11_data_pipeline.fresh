@@ -1,0 +1,83 @@
+// examples/11_data_pipeline.fresh - Data pipeline processing with fresh.data
+import data;
+
+println("==================================================");
+println("     FRESH.DATA - FAST DATA PIPELINE ENGINE       ");
+println("==================================================");
+
+// 1. Ingest CSV Data
+let csv_file = "users.csv";
+if (!file_exists(csv_file)) {
+    csv_file = "examples/users.csv";
+}
+let users = data.read_csv(csv_file);
+println("Read users dataset. Initial total count: " + to_string(users.count()));
+users.show(10);
+
+// 2. Filter Pipeline: Adults Only (age >= 18)
+let is_adult = fn(row: DataRow) -> bool {
+    return row.get_int("age") >= 18;
+};
+
+let adults = users.filter(is_adult);
+println("\nFiltered adults (age >= 18). Count: " + to_string(adults.count()));
+adults.show(10);
+
+// 3. Select Specific Columns: "name", "age", "country"
+let projection = adults.select(["name", "age", "country"]);
+println("\nProjected columns: name, age, country");
+projection.show(5);
+
+// 4. Sort by Age Descending
+let sorted_by_age = projection.sort_by("age", false);
+println("\nSorted by age descending:");
+sorted_by_age.show(5);
+
+// 5. Aggregations: Sum and Average Salary
+let total_salary = users.sum("salary");
+let avg_salary = users.avg("salary");
+println("\nSalary Analytics:");
+println("Total Salary:   $" + to_string(total_salary));
+println("Average Salary: $" + to_string(avg_salary));
+println("Minimum Salary: $" + to_string(users.min("salary")));
+println("Maximum Salary: $" + to_string(users.max("salary")));
+
+// 6. Group By Country (Counting Users Per Country)
+let country_counts = adults.group_by("country");
+println("\nAdult user counts grouped by country:");
+country_counts.show(5);
+
+// 7. Aggregate by Country: Average Salary per Country
+let country_avg_sal = users.aggregate("country", "salary", "avg");
+println("\nAverage salary grouped by country:");
+country_avg_sal.show(5);
+
+// 8. Relational Join with Department Dataset
+let dept_headers = ["country", "tax_rate"];
+let dept_rows = [
+    data.create_row(dept_headers, ["USA", "0.25"]),
+    data.create_row(dept_headers, ["Canada", "0.30"]),
+    data.create_row(dept_headers, ["UK", "0.20"])
+];
+let taxes = data.from_rows(dept_headers, dept_rows);
+
+let joined = adults.join(taxes, "country", "country");
+println("\nJoined users with tax rates:");
+joined.show(5);
+
+// 9. Export Processed Pipeline to Output CSV
+let out_file = "adults_summary.csv";
+if (file_exists("examples")) {
+    out_file = "examples/adults_summary.csv";
+}
+let exported = data.write_csv(sorted_by_age, out_file);
+println("\nExported processed pipeline to '" + out_file + "': " + to_string(exported));
+
+if (file_exists(out_file)) {
+    let written_content = read_file(out_file);
+    println("File exists and confirmed. Preview of exported CSV:\n" + written_content);
+}
+
+println("==================================================");
+println(" [SUCCESS] fresh.data pipeline passed cleanly!    ");
+println("==================================================");

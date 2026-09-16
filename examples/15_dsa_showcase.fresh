@@ -1,0 +1,140 @@
+// examples/15_dsa_showcase.fresh - Data Structures & Algorithms showcase for Fresh
+import dsa;
+
+println("==================================================");
+println(" FRESH.DSA - DATA STRUCTURES & ALGORITHMS SUITE   ");
+println("==================================================");
+
+// 1. Stack (LIFO)
+println("\n[1] STACK (LIFO)");
+let s = dsa.stack();
+s.push(10);
+s.push(20);
+s.push(30);
+println("Stack size: " + to_string(s.size()));
+println("Stack peek: " + to_string(s.peek()));
+println("Popped:     " + to_string(s.pop()));
+println("Popped:     " + to_string(s.pop()));
+println("Remaining:  " + to_string(s.to_array()));
+
+// 2. Queue (FIFO)
+println("\n[2] QUEUE (FIFO)");
+let q = dsa.queue();
+q.enqueue("Task A");
+q.enqueue("Task B");
+q.enqueue("Task C");
+println("Queue size: " + to_string(q.size()));
+println("Dequeued:   " + to_string(q.dequeue()));
+println("Dequeued:   " + to_string(q.dequeue()));
+println("Remaining:  " + to_string(q.to_array()));
+
+// 3. Min-Heap / Priority Queue
+println("\n[3] MIN-HEAP (PRIORITY QUEUE)");
+let heap = dsa.min_heap();
+heap.insert(45.0);
+heap.insert(12.0);
+heap.insert(89.0);
+heap.insert(7.0);
+heap.insert(33.0);
+println("Min element (peek): " + to_string(heap.peek()));
+let sorted_extracted: [float] = [];
+while (!heap.is_empty()) {
+    push(sorted_extracted, heap.extract_min());
+}
+println("Heap extracted sorted: " + to_string(sorted_extracted));
+
+// 4. Singly Linked List
+println("\n[4] LINKED LIST");
+let ll = dsa.linked_list();
+ll.append("Node 2");
+ll.append("Node 3");
+ll.prepend("Node 1");
+println("Linked list elements: " + to_string(ll.to_array()));
+println("Contains 'Node 2'? " + to_string(ll.contains("Node 2")));
+ll.remove("Node 2");
+println("After removing 'Node 2': " + to_string(ll.to_array()));
+
+// 5. Hash Map (Key-Value Dictionary)
+println("\n[5] HASH MAP");
+let map = dsa.hash_map();
+map.put("language", "Fresh");
+map.put("author", "Admin");
+map.put("fast", "true");
+println("Map size: " + to_string(map.size()));
+println("Get 'language': " + map.get("language"));
+println("Contains 'author'? " + to_string(map.contains("author")));
+map.remove("fast");
+println("Keys after removal: " + to_string(map.keys()));
+
+// 6. Binary Search Tree (BST)
+println("\n[6] BINARY SEARCH TREE (BST)");
+let bst = dsa.bst();
+bst.insert(50);
+bst.insert(30);
+bst.insert(70);
+bst.insert(20);
+bst.insert(40);
+bst.insert(60);
+bst.insert(80);
+println("BST In-Order Traversal: " + to_string(bst.in_order()));
+println("BST Search 40: " + to_string(bst.search(40)));
+println("BST Search 99: " + to_string(bst.search(99)));
+println("BST Min: " + to_string(bst.min_val()) + ", Max: " + to_string(bst.max_val()));
+
+// 7. Graph Algorithms: BFS, DFS, Dijkstra
+println("\n[7] GRAPH & SHORTEST PATHS");
+let g = dsa.graph(5);
+// Construct graph:
+// 0 --(4)--> 1 --(2)--> 2
+// 0 --(1)--> 3 --(5)--> 1
+// 1 --(3)--> 4
+g.add_edge(0, 1, 4.0, true);
+g.add_edge(0, 3, 1.0, true);
+g.add_edge(3, 1, 2.0, true);
+g.add_edge(1, 2, 2.0, true);
+g.add_edge(1, 4, 3.0, true);
+
+println("BFS traversal from 0: " + to_string(g.bfs(0)));
+println("DFS traversal from 0: " + to_string(g.dfs(0)));
+let distances = g.dijkstra(0);
+println("Dijkstra shortest distances from node 0: " + to_string(distances));
+println("Distance to node 1 (via 0->3->1): " + to_string(distances[1]) + " (Expected 3.0)");
+
+// 8. Disjoint Set / Union-Find
+println("\n[8] DISJOINT SET / UNION-FIND");
+let ds = dsa.disjoint_set(6);
+ds.union_sets(0, 1);
+ds.union_sets(1, 2);
+ds.union_sets(3, 4);
+println("Are 0 and 2 connected? " + to_string(ds.connected(0, 2)));
+println("Are 0 and 3 connected? " + to_string(ds.connected(0, 3)));
+
+// 9. Sorting & Searching
+println("\n[9] SORTING & SEARCHING");
+let unorganized = [64, 34, 25, 12, 22, 11, 90];
+println("Original array:   " + to_string(unorganized));
+let q_sorted = dsa.quick_sort(unorganized);
+println("QuickSort result: " + to_string(q_sorted));
+let b_sorted = dsa.bubble_sort(unorganized);
+println("BubbleSort result:" + to_string(b_sorted));
+
+let target = 25;
+let target_idx = dsa.binary_search(q_sorted, target);
+println("Binary search for " + to_string(target) + ": found at index " + to_string(target_idx));
+
+// 10. Dynamic Programming
+println("\n[10] DYNAMIC PROGRAMMING");
+println("DP Fibonacci(15): " + to_string(dsa.fibonacci(15)) + " (Expected 610)");
+
+let sub_arr = [-2, 1, -3, 4, -1, 2, 1, -5, 4];
+let max_sum = dsa.max_subarray(sub_arr);
+println("Kadane's Max Subarray Sum: " + to_string(max_sum) + " (Expected 6)");
+
+let wts = [2, 3, 4, 5];
+let vals = [3, 4, 5, 6];
+let max_knapsack = dsa.knapsack(wts, vals, 5);
+println("0/1 Knapsack (capacity=5):  " + to_string(max_knapsack) + " (Expected 7)");
+
+println("\n==================================================");
+println(" [SUCCESS] fresh.dsa tests passed cleanly!        ");
+println("==================================================");

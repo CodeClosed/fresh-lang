@@ -1,0 +1,76 @@
+// examples/14_full_showcase.fresh - End-to-end integration pipeline
+// Architecture: sys (environment) -> data (pipeline) -> tensor (matrix) -> ml (training & prediction)
+
+import sys;
+import data;
+import tensor;
+import ml;
+
+println("=== FRESH END-TO-END DATA SCIENCE & ML PIPELINE ===");
+
+// [1] SYS Diagnostics
+println("[1] SYS");
+println("OS: " + sys.os());
+println("Cores: " + to_string(sys.cpu_count()));
+println("Memory: " + to_string(sys.memory_used()) + " MB");
+
+let t_start = sys.clock_ms();
+
+// [2] DATA Processing
+println("[2] DATA");
+let hdrs = ["temp", "vib", "anomaly"];
+let rows = [
+    data.create_row(hdrs, ["45.0", "0.10", "0.0"]),
+    data.create_row(hdrs, ["48.0", "0.14", "0.0"]),
+    data.create_row(hdrs, ["88.0", "0.85", "1.0"]),
+    data.create_row(hdrs, ["95.0", "0.92", "1.0"])
+];
+
+let stream = data.from_rows(hdrs, rows);
+println("Records: " + to_string(stream.count()));
+println("Avg Temp: " + to_string(stream.avg("temp")));
+println("Max Temp: " + to_string(stream.max("temp")));
+
+// [3] TENSOR Numerical Computing
+println("[3] TENSOR");
+let r_list = stream.collect();
+let X_data: [[float]] = [];
+let y_data: [float] = [];
+
+for (let i = 0; i < len(r_list); i = i + 1) {
+    let t = r_list[i].get_float("temp");
+    let v = r_list[i].get_float("vib");
+    let a = r_list[i].get_float("anomaly");
+    push(X_data, [t, v]);
+    push(y_data, a);
+}
+
+let feat = tensor(X_data);
+println("Shape: " + to_string(feat.shape));
+println("Mean: " + to_string(feat.mean()));
+println("Norm: " + to_string(feat.norm()));
+
+// [4] ML Model Training
+println("[4] ML");
+let model = ml.logistic_regression();
+model.fit(X_data, y_data, 0.01, 300);
+
+let test_samples = [
+    [46.0, 0.12],
+    [93.0, 0.88]
+];
+let probs = model.predict_proba(test_samples);
+let preds = model.predict(test_samples);
+
+println("Sample 1: Prob=" + to_string(probs[0]) + " Class=" + to_string(preds[0]));
+println("Sample 2: Prob=" + to_string(probs[1]) + " Class=" + to_string(preds[1]));
+
+// [5] SYS Audit
+println("[5] AUDIT");
+let t_end = sys.clock_ms();
+println("Elapsed: " + to_string(t_end - t_start) + " ms");
+
+let proc = sys.run("audit");
+println("Audit Exit Code: " + to_string(proc.exit_code));
+
+println("=== [SUCCESS] PIPELINE COMPLETED SUCCESSFULLY! ===");
