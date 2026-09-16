@@ -1,0 +1,513 @@
+// lib/net.fresh - Networking, Protocols, and JSON APIs for Fresh
+import "string_utils.fresh";
+
+// ── URL Parser ────────────────────────────────────────────────
+
+struct Url {
+    raw: string,
+    scheme: string,
+    host: string,
+    port: int,
+    path: string,
+    query: string
+}
+
+fn url_parse(raw_url: string) -> Url {
+    let u = raw_url;
+    let scheme = "http";
+    let host = "";
+    let port = 80;
+    let path = "/";
+    let query = "";
+
+    // Check scheme
+    let scheme_sep = str_index_of(u, "://");
+    let rest = u;
+    if (scheme_sep >= 0) {
+        scheme = str_substr(u, 0, scheme_sep);
+        rest = str_slice(u, scheme_sep + 3, len(u));
+    }
+
+    // Default ports based on scheme
+    if (scheme == "https" || scheme == "wss") {
+        port = 443;
+    }
+
+    // Extract path and query
+    let slash_pos = str_index_of(rest, "/");
+    let host_part = rest;
+    if (slash_pos >= 0) {
+        host_part = str_substr(rest, 0, slash_pos);
+        path = str_slice(rest, slash_pos, len(rest));
+    }
+
+    let q_pos = str_index_of(path, "?");
+    if (q_pos >= 0) {
+        query = str_slice(path, q_pos + 1, len(path));
+        path = str_substr(path, 0, q_pos);
+    }
+
+    // Host & Port
+    let colon_pos = str_index_of(host_part, ":");
+    if (colon_pos >= 0) {
+        host = str_substr(host_part, 0, colon_pos);
+        let port_str = str_slice(host_part, colon_pos + 1, len(host_part));
+        port = to_int(port_str);
+    } else {
+        host = host_part;
+    }
+
+    return Url {
+        raw: raw_url,
+        scheme: scheme,
+        host: host,
+        port: port,
+        path: path,
+        query: query
+    };
+}
+
+// ── HTTP Subsystem ────────────────────────────────────────────
+
+struct HttpRequest {
+    method: string,
+    path: string,
+    host: string,
+    headers: [string],
+    body: string
+}
+
+struct HttpResponse {
+    status_code: int,
+    status_text: string,
+    headers: [string],
+    body: string
+}
+
+fn http_status_text(code: int) -> string {
+    return match code {
+        200 => "OK",
+        201 => "Created",
+        204 => "No Content",
+        301 => "Moved Permanently",
+        302 => "Found",
+        400 => "Bad Request",
+        401 => "Unauthorized",
+        403 => "Forbidden",
+        404 => "Not Found",
+        500 => "Internal Server Error",
+        502 => "Bad Gateway",
+        503 => "Service Unavailable",
+        _ => "Unknown Status"
+    };
+}
+
+fn http_build_request(method: string, path: string, host: string, headers: [string], body: string) -> string {
+    let req = method + " " + path + " HTTP/1.1\r\n";
+    req = req + "Host: " + host + "\r\n";
+    for (let i = 0; i < len(headers); i = i + 1) {
+        req = req + headers[i] + "\r\n";
+    }
+    if (len(body) > 0) {
+        req = req + "Content-Length: " + to_string(len(body)) + "\r\n";
+    }
+    req = req + "\r\n" + body;
+    return req;
+}
+
+fn http_parse_request(raw_http: string) -> HttpRequest {
+    let lines = str_split(raw_http, "\r\n");
+    if (len(lines) <= 1) {
+        lines = str_split(raw_http, "\n");
+    }
+
+    let first_line = lines[0];
+    let parts = str_split(first_line, " ");
+    let method = parts[0];
+    let path = "/";
+    if (len(parts) > 1) {
+        path = parts[1];
+    }
+
+    let host = "";
+    let headers: [string] = [];
+    let body = "";
+    let in_body = false;
+
+    for (let i = 1; i < len(lines); i = i + 1) {
+        let line = lines[i];
+        if (in_body) {
+            body = body + line + "\n";
+        } else {
+            if (len(str_trim(line)) == 0) {
+                in_body = true;
+            } else {
+                push(headers, line);
+                if (str_starts_with(line, "Host:") || str_starts_with(line, "host:")) {
+                    let h_parts = str_split(line, ":");
+                    host = str_trim(h_parts[1]);
+                }
+            }
+        }
+    }
+
+    return HttpRequest {
+        method: method,
+        path: path,
+        host: host,
+        headers: headers,
+        body: str_trim_right(body)
+    };
+}
+
+fn http_build_response(status_code: int, headers: [string], body: string) -> string {
+    let resp = "HTTP/1.1 " + to_string(status_code) + " " + http_status_text(status_code) + "\r\n";
+    for (let i = 0; i < len(headers); i = i + 1) {
+        resp = resp + headers[i] + "\r\n";
+    }
+    resp = resp + "Content-Length: " + to_string(len(body)) + "\r\n";
+    resp = resp + "\r\n" + body;
+    return resp;
+}
+
+fn http_parse_response(raw_resp: string) -> HttpResponse {
+    let lines = str_split(raw_resp, "\r\n");
+    if (len(lines) <= 1) {
+        lines = str_split(raw_resp, "\n");
+    }
+
+    let first_line = lines[0];
+    let parts = str_split(first_line, " ");
+    let status = to_int(parts[1]);
+    let text = parts[2];
+
+    let headers: [string] = [];
+    let body = "";
+    let in_body = false;
+
+    for (let i = 1; i < len(lines); i = i + 1) {
+        let line = lines[i];
+        if (in_body) {
+            body = body + line + "\n";
+        } else {
+            if (len(str_trim(line)) == 0) {
+                in_body = true;
+            } else {
+                push(headers, line);
+            }
+        }
+    }
+
+    return HttpResponse {
+        status_code: status,
+        status_text: text,
+        headers: headers,
+        body: str_trim_right(body)
+    };
+}
+
+// ── JSON API Helpers ──────────────────────────────────────────
+
+fn json_build_object(keys: [string], vals: [string]) -> string {
+    let out = "{";
+    for (let i = 0; i < len(keys); i = i + 1) {
+        if (i > 0) {
+            out = out + ", ";
+        }
+        out = out + "\"" + keys[i] + "\": \"" + vals[i] + "\"";
+    }
+    out = out + "}";
+    return out;
+}
+
+fn json_get_field(json_str: string, key: string) -> string {
+    let needle = "\"" + key + "\"";
+    let pos = str_index_of(json_str, needle);
+    if (pos < 0) {
+        return "";
+    }
+    let colon_pos = str_index_of(str_slice(json_str, pos, len(json_str)), ":");
+    if (colon_pos < 0) {
+        return "";
+    }
+    let val_start = pos + colon_pos + 1;
+    let after_colon = str_trim(str_slice(json_str, val_start, len(json_str)));
+
+    if (str_starts_with(after_colon, "\"")) {
+        let second_quote = str_index_of(str_slice(after_colon, 1, len(after_colon)), "\"");
+        if (second_quote >= 0) {
+            return str_substr(after_colon, 1, second_quote);
+        }
+    }
+
+    // Number or boolean value (until comma or brace)
+    let end_idx = 0;
+    while (end_idx < len(after_colon) && after_colon[end_idx] != "," && after_colon[end_idx] != "}" && after_colon[end_idx] != "\n") {
+        end_idx = end_idx + 1;
+    }
+    return str_trim(str_substr(after_colon, 0, end_idx));
+}
+
+// ── DNS Subsystem ─────────────────────────────────────────────
+
+struct DnsRecord {
+    domain: string,
+    record_type: string,
+    ttl: int,
+    value: string
+}
+
+struct DnsPacket {
+    id: int,
+    is_response: bool,
+    domain: string,
+    record_type: string,
+    answers: [DnsRecord]
+}
+
+fn dns_build_query(id: int, domain: string, qtype: string) -> string {
+    return "DNS_QUERY|ID=" + to_string(id) + "|QNAME=" + domain + "|QTYPE=" + qtype;
+}
+
+fn dns_build_response(id: int, domain: string, qtype: string, ip: string, ttl: int) -> string {
+    return "DNS_RESP|ID=" + to_string(id) + "|QNAME=" + domain + "|QTYPE=" + qtype + "|ANSWER=" + ip + "|TTL=" + to_string(ttl);
+}
+
+fn dns_parse_packet(raw_pkt: string) -> DnsPacket {
+    let parts = str_split(raw_pkt, "|");
+    let is_resp = (parts[0] == "DNS_RESP");
+    let pkt_id = 0;
+    let dom = "";
+    let qtype = "A";
+    let answers: [DnsRecord] = [];
+
+    for (let i = 1; i < len(parts); i = i + 1) {
+        let kv = str_split(parts[i], "=");
+        let k = kv[0];
+        let v = kv[1];
+        if (k == "ID") {
+            pkt_id = to_int(v);
+        } else if (k == "QNAME") {
+            dom = v;
+        } else if (k == "QTYPE") {
+            qtype = v;
+        } else if (k == "ANSWER") {
+            push(answers, DnsRecord {
+                domain: dom,
+                record_type: qtype,
+                ttl: 300,
+                value: v
+            });
+        }
+    }
+
+    return DnsPacket {
+        id: pkt_id,
+        is_response: is_resp,
+        domain: dom,
+        record_type: qtype,
+        answers: answers
+    };
+}
+
+// ── TCP / UDP Protocol Frame ──────────────────────────────────
+
+struct TcpPacket {
+    src_port: int,
+    dst_port: int,
+    seq: int,
+    ack: int,
+    flags: string,
+    payload: string
+}
+
+struct UdpPacket {
+    src_port: int,
+    dst_port: int,
+    length: int,
+    payload: string
+}
+
+fn tcp_build_packet(src: int, dst: int, seq: int, ack: int, flags: string, payload: string) -> string {
+    return "TCP|SRC=" + to_string(src) + "|DST=" + to_string(dst) + "|SEQ=" + to_string(seq) +
+           "|ACK=" + to_string(ack) + "|FLAGS=" + flags + "|LEN=" + to_string(len(payload)) + "|DATA=" + payload;
+}
+
+fn tcp_parse_packet(raw: string) -> TcpPacket {
+    let parts = str_split(raw, "|");
+    let src = 0;
+    let dst = 0;
+    let seq = 0;
+    let ack = 0;
+    let flags = "";
+    let payload = "";
+
+    for (let i = 1; i < len(parts); i = i + 1) {
+        let kv = str_split(parts[i], "=");
+        let k = kv[0];
+        let v = kv[1];
+        if (k == "SRC") {
+            src = to_int(v);
+        } else if (k == "DST") {
+            dst = to_int(v);
+        } else if (k == "SEQ") {
+            seq = to_int(v);
+        } else if (k == "ACK") {
+            ack = to_int(v);
+        } else if (k == "FLAGS") {
+            flags = v;
+        } else if (k == "DATA") {
+            payload = v;
+        }
+    }
+
+    return TcpPacket {
+        src_port: src,
+        dst_port: dst,
+        seq: seq,
+        ack: ack,
+        flags: flags,
+        payload: payload
+    };
+}
+
+fn udp_build_packet(src: int, dst: int, payload: string) -> string {
+    return "UDP|SRC=" + to_string(src) + "|DST=" + to_string(dst) + "|LEN=" + to_string(len(payload)) + "|DATA=" + payload;
+}
+
+fn udp_parse_packet(raw: string) -> UdpPacket {
+    let parts = str_split(raw, "|");
+    let src = 0;
+    let dst = 0;
+    let plen = 0;
+    let payload = "";
+
+    for (let i = 1; i < len(parts); i = i + 1) {
+        let kv = str_split(parts[i], "=");
+        let k = kv[0];
+        let v = kv[1];
+        if (k == "SRC") {
+            src = to_int(v);
+        } else if (k == "DST") {
+            dst = to_int(v);
+        } else if (k == "LEN") {
+            plen = to_int(v);
+        } else if (k == "DATA") {
+            payload = v;
+        }
+    }
+
+    return UdpPacket {
+        src_port: src,
+        dst_port: dst,
+        length: plen,
+        payload: payload
+    };
+}
+
+// ── WebSocket Subsystem ───────────────────────────────────────
+
+struct WsFrame {
+    fin: bool,
+    opcode: int,
+    masked: bool,
+    payload: string
+}
+
+fn ws_build_handshake_request(host: string, path: string, key: string) -> string {
+    let req = "GET " + path + " HTTP/1.1\r\n" +
+              "Host: " + host + "\r\n" +
+              "Upgrade: websocket\r\n" +
+              "Connection: Upgrade\r\n" +
+              "Sec-WebSocket-Key: " + key + "\r\n" +
+              "Sec-WebSocket-Version: 13\r\n\r\n";
+    return req;
+}
+
+fn ws_build_handshake_response(accept_key: string) -> string {
+    let resp = "HTTP/1.1 101 Switching Protocols\r\n" +
+               "Upgrade: websocket\r\n" +
+               "Connection: Upgrade\r\n" +
+               "Sec-WebSocket-Accept: " + accept_key + "\r\n\r\n";
+    return resp;
+}
+
+fn ws_build_frame(opcode: int, payload: string, masked: bool) -> string {
+    let mask_str = "MASK=0";
+    if (masked) {
+        mask_str = "MASK=1";
+    }
+    return "WS_FRAME|FIN=1|OP=" + to_string(opcode) + "|" + mask_str + "|LEN=" + to_string(len(payload)) + "|DATA=" + payload;
+}
+
+fn ws_parse_frame(raw: string) -> WsFrame {
+    let parts = str_split(raw, "|");
+    let fin = true;
+    let opcode = 1;
+    let masked = false;
+    let payload = "";
+
+    for (let i = 1; i < len(parts); i = i + 1) {
+        let kv = str_split(parts[i], "=");
+        let k = kv[0];
+        let v = kv[1];
+        if (k == "FIN") {
+            fin = (v == "1");
+        } else if (k == "OP") {
+            opcode = to_int(v);
+        } else if (k == "MASK") {
+            masked = (v == "1");
+        } else if (k == "DATA") {
+            payload = v;
+        }
+    }
+
+    return WsFrame {
+        fin: fin,
+        opcode: opcode,
+        masked: masked,
+        payload: payload
+    };
+}
+
+// ── Net Module Singleton ──────────────────────────────────────
+
+struct NetModule {
+    url_parse: fn,
+    build_request: fn,
+    parse_request: fn,
+    build_response: fn,
+    parse_response: fn,
+    json_obj: fn,
+    json_get: fn,
+    dns_query: fn,
+    dns_response: fn,
+    dns_parse: fn,
+    tcp_build: fn,
+    tcp_parse: fn,
+    udp_build: fn,
+    udp_parse: fn,
+    ws_handshake: fn,
+    ws_frame: fn,
+    ws_parse: fn
+}
+
+let net = NetModule {
+    url_parse: url_parse,
+    build_request: http_build_request,
+    parse_request: http_parse_request,
+    build_response: http_build_response,
+    parse_response: http_parse_response,
+    json_obj: json_build_object,
+    json_get: json_get_field,
+    dns_query: dns_build_query,
+    dns_response: dns_build_response,
+    dns_parse: dns_parse_packet,
+    tcp_build: tcp_build_packet,
+    tcp_parse: tcp_parse_packet,
+    udp_build: udp_build_packet,
+    udp_parse: udp_parse_packet,
+    ws_handshake: ws_build_handshake_request,
+    ws_frame: ws_build_frame,
+    ws_parse: ws_parse_frame
+};

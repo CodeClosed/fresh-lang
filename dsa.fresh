@@ -1,0 +1,830 @@
+// lib/dsa.fresh - Comprehensive Data Structures & Algorithms for Fresh
+import "string_utils.fresh";
+
+// ── 1. Stack (LIFO) ───────────────────────────────────────────
+
+struct Stack {
+    push: fn,
+    pop: fn,
+    peek: fn,
+    is_empty: fn,
+    size: fn,
+    to_array: fn
+}
+
+fn dsa_stack() -> Stack {
+    let items: [any] = [];
+
+    let push_fn = fn(item: any) {
+        push(items, item);
+        return nil;
+    };
+
+    let pop_fn = fn() -> any {
+        if (len(items) == 0) {
+            return nil;
+        }
+        return pop(items);
+    };
+
+    let peek_fn = fn() -> any {
+        let n = len(items);
+        if (n == 0) {
+            return nil;
+        }
+        return items[n - 1];
+    };
+
+    let is_empty_fn = fn() -> bool {
+        return len(items) == 0;
+    };
+
+    let size_fn = fn() -> int {
+        return len(items);
+    };
+
+    let to_array_fn = fn() -> [any] {
+        let copy_arr: [any] = [];
+        for (let i = 0; i < len(items); i = i + 1) {
+            push(copy_arr, items[i]);
+        }
+        return copy_arr;
+    };
+
+    return Stack {
+        push: push_fn,
+        pop: pop_fn,
+        peek: peek_fn,
+        is_empty: is_empty_fn,
+        size: size_fn,
+        to_array: to_array_fn
+    };
+}
+
+// ── 2. Queue (FIFO) ───────────────────────────────────────────
+
+struct Queue {
+    enqueue: fn,
+    dequeue: fn,
+    peek: fn,
+    is_empty: fn,
+    size: fn,
+    to_array: fn
+}
+
+fn dsa_queue() -> Queue {
+    let items: [any] = [];
+    let head = 0;
+
+    let enqueue_fn = fn(item: any) {
+        push(items, item);
+        return nil;
+    };
+
+    let dequeue_fn = fn() -> any {
+        if (head >= len(items)) {
+            return nil;
+        }
+        let val = items[head];
+        head = head + 1;
+        return val;
+    };
+
+    let peek_fn = fn() -> any {
+        if (head >= len(items)) {
+            return nil;
+        }
+        return items[head];
+    };
+
+    let is_empty_fn = fn() -> bool {
+        return head >= len(items);
+    };
+
+    let size_fn = fn() -> int {
+        return len(items) - head;
+    };
+
+    let to_array_fn = fn() -> [any] {
+        let copy_arr: [any] = [];
+        for (let i = head; i < len(items); i = i + 1) {
+            push(copy_arr, items[i]);
+        }
+        return copy_arr;
+    };
+
+    return Queue {
+        enqueue: enqueue_fn,
+        dequeue: dequeue_fn,
+        peek: peek_fn,
+        is_empty: is_empty_fn,
+        size: size_fn,
+        to_array: to_array_fn
+    };
+}
+
+// ── 3. Binary Min-Heap (Priority Queue) ───────────────────────
+
+struct MinHeap {
+    insert: fn,
+    extract_min: fn,
+    peek: fn,
+    size: fn,
+    is_empty: fn
+}
+
+fn dsa_min_heap() -> MinHeap {
+    let data: [float] = [];
+
+    let insert_fn = fn(val: float) {
+        push(data, val);
+        let idx = len(data) - 1;
+        while (idx > 0) {
+            let parent = (idx - 1) / 2;
+            if (data[idx] < data[parent]) {
+                let tmp = data[idx];
+                data[idx] = data[parent];
+                data[parent] = tmp;
+                idx = parent;
+            } else {
+                break;
+            }
+        }
+        return nil;
+    };
+
+    let extract_min_fn = fn() -> float {
+        let n = len(data);
+        if (n == 0) {
+            return 0.0;
+        }
+        let min_val = data[0];
+        let last_val = pop(data);
+        if (len(data) == 0) {
+            return min_val;
+        }
+        data[0] = last_val;
+
+        let idx = 0;
+        let sz = len(data);
+        while (true) {
+            let left = 2 * idx + 1;
+            let right = 2 * idx + 2;
+            let smallest = idx;
+
+            if (left < sz && data[left] < data[smallest]) {
+                smallest = left;
+            }
+            if (right < sz && data[right] < data[smallest]) {
+                smallest = right;
+            }
+
+            if (smallest != idx) {
+                let tmp = data[idx];
+                data[idx] = data[smallest];
+                data[smallest] = tmp;
+                idx = smallest;
+            } else {
+                break;
+            }
+        }
+        return min_val;
+    };
+
+    let peek_fn = fn() -> float {
+        if (len(data) == 0) {
+            return 0.0;
+        }
+        return data[0];
+    };
+
+    let size_fn = fn() -> int {
+        return len(data);
+    };
+
+    let is_empty_fn = fn() -> bool {
+        return len(data) == 0;
+    };
+
+    return MinHeap {
+        insert: insert_fn,
+        extract_min: extract_min_fn,
+        peek: peek_fn,
+        size: size_fn,
+        is_empty: is_empty_fn
+    };
+}
+
+// ── 4. Singly Linked List ─────────────────────────────────────
+
+struct LinkedList {
+    append: fn,
+    prepend: fn,
+    contains: fn,
+    remove: fn,
+    size: fn,
+    to_array: fn
+}
+
+fn dsa_linked_list() -> LinkedList {
+    let nodes: [any] = [];
+
+    let append_fn = fn(val: any) {
+        push(nodes, val);
+        return nil;
+    };
+
+    let prepend_fn = fn(val: any) {
+        let new_nodes: [any] = [val];
+        for (let i = 0; i < len(nodes); i = i + 1) {
+            push(new_nodes, nodes[i]);
+        }
+        nodes = new_nodes;
+        return nil;
+    };
+
+    let contains_fn = fn(val: any) -> bool {
+        for (let i = 0; i < len(nodes); i = i + 1) {
+            if (nodes[i] == val) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    let remove_fn = fn(val: any) -> bool {
+        let new_nodes: [any] = [];
+        let found = false;
+        for (let i = 0; i < len(nodes); i = i + 1) {
+            if (!found && nodes[i] == val) {
+                found = true;
+            } else {
+                push(new_nodes, nodes[i]);
+            }
+        }
+        nodes = new_nodes;
+        return found;
+    };
+
+    let size_fn = fn() -> int {
+        return len(nodes);
+    };
+
+    let to_array_fn = fn() -> [any] {
+        let copy_arr: [any] = [];
+        for (let i = 0; i < len(nodes); i = i + 1) {
+            push(copy_arr, nodes[i]);
+        }
+        return copy_arr;
+    };
+
+    return LinkedList {
+        append: append_fn,
+        prepend: prepend_fn,
+        contains: contains_fn,
+        remove: remove_fn,
+        size: size_fn,
+        to_array: to_array_fn
+    };
+}
+
+// ── 5. Hash Map (Key-Value Dictionary) ────────────────────────
+
+struct HashMap {
+    put: fn,
+    get: fn,
+    contains: fn,
+    remove: fn,
+    keys: fn,
+    size: fn
+}
+
+fn dsa_hash_map() -> HashMap {
+    let k_list: [string] = [];
+    let v_list: [string] = [];
+
+    let put_fn = fn(key: string, val: string) {
+        for (let i = 0; i < len(k_list); i = i + 1) {
+            if (k_list[i] == key) {
+                v_list[i] = val;
+                return nil;
+            }
+        }
+        push(k_list, key);
+        push(v_list, val);
+        return nil;
+    };
+
+    let get_fn = fn(key: string) -> string {
+        for (let i = 0; i < len(k_list); i = i + 1) {
+            if (k_list[i] == key) {
+                return v_list[i];
+            }
+        }
+        return "";
+    };
+
+    let contains_fn = fn(key: string) -> bool {
+        for (let i = 0; i < len(k_list); i = i + 1) {
+            if (k_list[i] == key) {
+                return true;
+            }
+        }
+        return false;
+    };
+
+    let remove_fn = fn(key: string) -> bool {
+        let new_k: [string] = [];
+        let new_v: [string] = [];
+        let found = false;
+        for (let i = 0; i < len(k_list); i = i + 1) {
+            if (k_list[i] == key) {
+                found = true;
+            } else {
+                push(new_k, k_list[i]);
+                push(new_v, v_list[i]);
+            }
+        }
+        k_list = new_k;
+        v_list = new_v;
+        return found;
+    };
+
+    let keys_fn = fn() -> [string] {
+        let res: [string] = [];
+        for (let i = 0; i < len(k_list); i = i + 1) {
+            push(res, k_list[i]);
+        }
+        return res;
+    };
+
+    let size_fn = fn() -> int {
+        return len(k_list);
+    };
+
+    return HashMap {
+        put: put_fn,
+        get: get_fn,
+        contains: contains_fn,
+        remove: remove_fn,
+        keys: keys_fn,
+        size: size_fn
+    };
+}
+
+// ── 6. Binary Search Tree (BST) ───────────────────────────────
+
+struct BST {
+    insert: fn,
+    search: fn,
+    in_order: fn,
+    min_val: fn,
+    max_val: fn
+}
+
+fn dsa_bst() -> BST {
+    let tree_vals: [int] = [];
+    let left_child: [int] = [];
+    let right_child: [int] = [];
+
+    let insert_fn = fn(val: int) {
+        let new_idx = len(tree_vals);
+        push(tree_vals, val);
+        push(left_child, -1);
+        push(right_child, -1);
+
+        if (new_idx == 0) {
+            return nil;
+        }
+
+        let curr = 0;
+        while (true) {
+            if (val < tree_vals[curr]) {
+                if (left_child[curr] == -1) {
+                    left_child[curr] = new_idx;
+                    break;
+                }
+                curr = left_child[curr];
+            } else {
+                if (right_child[curr] == -1) {
+                    right_child[curr] = new_idx;
+                    break;
+                }
+                curr = right_child[curr];
+            }
+        }
+        return nil;
+    };
+
+    let search_fn = fn(target: int) -> bool {
+        if (len(tree_vals) == 0) {
+            return false;
+        }
+        let curr = 0;
+        while (curr != -1) {
+            if (tree_vals[curr] == target) {
+                return true;
+            }
+            if (target < tree_vals[curr]) {
+                curr = left_child[curr];
+            } else {
+                curr = right_child[curr];
+            }
+        }
+        return false;
+    };
+
+    let in_order_fn = fn() -> [int] {
+        let sorted: [int] = [];
+        for (let i = 0; i < len(tree_vals); i = i + 1) {
+            push(sorted, tree_vals[i]);
+        }
+        // In-order traversal representation (sorted)
+        for (let i = 0; i < len(sorted); i = i + 1) {
+            for (let j = 0; j < len(sorted) - i - 1; j = j + 1) {
+                if (sorted[j] > sorted[j + 1]) {
+                    let tmp = sorted[j];
+                    sorted[j] = sorted[j + 1];
+                    sorted[j + 1] = tmp;
+                }
+            }
+        }
+        return sorted;
+    };
+
+    let min_val_fn = fn() -> int {
+        let arr = in_order_fn();
+        if (len(arr) == 0) {
+            return 0;
+        }
+        return arr[0];
+    };
+
+    let max_val_fn = fn() -> int {
+        let arr = in_order_fn();
+        if (len(arr) == 0) {
+            return 0;
+        }
+        return arr[len(arr) - 1];
+    };
+
+    return BST {
+        insert: insert_fn,
+        search: search_fn,
+        in_order: in_order_fn,
+        min_val: min_val_fn,
+        max_val: max_val_fn
+    };
+}
+
+// ── 7. Graph & Algorithms (BFS, DFS, Dijkstra) ────────────────
+
+struct Graph {
+    add_edge: fn,
+    bfs: fn,
+    dfs: fn,
+    dijkstra: fn
+}
+
+fn dsa_graph(num_vertices: int) -> Graph {
+    let nv = num_vertices;
+    let adj: [[[float]]] = []; // adj[u] -> list of [neighbor, weight]
+    for (let i = 0; i < nv; i = i + 1) {
+        let empty_list: [[float]] = [];
+        push(adj, empty_list);
+    }
+
+    let add_edge_fn = fn(u: int, v: int, weight: float, directed: bool) {
+        let edge_forward: [float] = [to_float(v), weight];
+        push(adj[u], edge_forward);
+        if (!directed) {
+            let edge_back: [float] = [to_float(u), weight];
+            push(adj[v], edge_back);
+        }
+        return nil;
+    };
+
+    let bfs_fn = fn(start: int) -> [int] {
+        let visited: [bool] = [];
+        for (let i = 0; i < nv; i = i + 1) {
+            push(visited, false);
+        }
+        let order: [int] = [];
+        let q = dsa_queue();
+        q.enqueue(start);
+        visited[start] = true;
+
+        while (!q.is_empty()) {
+            let u = to_int(q.dequeue());
+            push(order, u);
+
+            let neighbors = adj[u];
+            for (let i = 0; i < len(neighbors); i = i + 1) {
+                let v = to_int(neighbors[i][0]);
+                if (!visited[v]) {
+                    visited[v] = true;
+                    q.enqueue(v);
+                }
+            }
+        }
+        return order;
+    };
+
+    let dfs_fn = fn(start: int) -> [int] {
+        let visited: [bool] = [];
+        for (let i = 0; i < nv; i = i + 1) {
+            push(visited, false);
+        }
+        let order: [int] = [];
+        let s = dsa_stack();
+        s.push(start);
+
+        while (!s.is_empty()) {
+            let u = to_int(s.pop());
+            if (!visited[u]) {
+                visited[u] = true;
+                push(order, u);
+
+                let neighbors = adj[u];
+                for (let i = len(neighbors) - 1; i >= 0; i = i - 1) {
+                    let v = to_int(neighbors[i][0]);
+                    if (!visited[v]) {
+                        s.push(v);
+                    }
+                }
+            }
+        }
+        return order;
+    };
+
+    let dijkstra_fn = fn(start: int) -> [float] {
+        let dist: [float] = [];
+        let visited: [bool] = [];
+        for (let i = 0; i < nv; i = i + 1) {
+            push(dist, 1000000000.0);
+            push(visited, false);
+        }
+        dist[start] = 0.0;
+
+        for (let iter = 0; iter < nv; iter = iter + 1) {
+            let min_d = 1000000000.0;
+            let u = -1;
+            for (let i = 0; i < nv; i = i + 1) {
+                if (!visited[i] && dist[i] < min_d) {
+                    min_d = dist[i];
+                    u = i;
+                }
+            }
+            if (u == -1) {
+                break;
+            }
+            visited[u] = true;
+
+            let neighbors = adj[u];
+            for (let i = 0; i < len(neighbors); i = i + 1) {
+                let v = to_int(neighbors[i][0]);
+                let w = neighbors[i][1];
+                if (!visited[v] && dist[u] + w < dist[v]) {
+                    dist[v] = dist[u] + w;
+                }
+            }
+        }
+        return dist;
+    };
+
+    return Graph {
+        add_edge: add_edge_fn,
+        bfs: bfs_fn,
+        dfs: dfs_fn,
+        dijkstra: dijkstra_fn
+    };
+}
+
+// ── 8. Disjoint Set / Union-Find ──────────────────────────────
+
+struct DisjointSet {
+    find: fn,
+    union_sets: fn,
+    connected: fn
+}
+
+fn dsa_disjoint_set(size: int) -> DisjointSet {
+    let parent: [int] = [];
+    for (let i = 0; i < size; i = i + 1) {
+        push(parent, i);
+    }
+
+    let find_fn = fn(i: int) -> int {
+        let curr = i;
+        while (parent[curr] != curr) {
+            curr = parent[curr];
+        }
+        return curr;
+    };
+
+    let union_fn = fn(i: int, j: int) -> bool {
+        let root_i = find_fn(i);
+        let root_j = find_fn(j);
+        if (root_i != root_j) {
+            parent[root_i] = root_j;
+            return true;
+        }
+        return false;
+    };
+
+    let connected_fn = fn(i: int, j: int) -> bool {
+        return find_fn(i) == find_fn(j);
+    };
+
+    return DisjointSet {
+        find: find_fn,
+        union_sets: union_fn,
+        connected: connected_fn
+    };
+}
+
+// ── 9. Sorting & Searching Algorithms ─────────────────────────
+
+fn bubble_sort(arr: [int]) -> [int] {
+    let n = len(arr);
+    let res: [int] = [];
+    for (let i = 0; i < n; i = i + 1) {
+        push(res, arr[i]);
+    }
+    for (let i = 0; i < n; i = i + 1) {
+        for (let j = 0; j < n - i - 1; j = j + 1) {
+            if (res[j] > res[j + 1]) {
+                let tmp = res[j];
+                res[j] = res[j + 1];
+                res[j + 1] = tmp;
+            }
+        }
+    }
+    return res;
+}
+
+fn insertion_sort(arr: [int]) -> [int] {
+    let n = len(arr);
+    let res: [int] = [];
+    for (let i = 0; i < n; i = i + 1) {
+        push(res, arr[i]);
+    }
+    for (let i = 1; i < n; i = i + 1) {
+        let key = res[i];
+        let j = i - 1;
+        while (j >= 0 && res[j] > key) {
+            res[j + 1] = res[j];
+            j = j - 1;
+        }
+        res[j + 1] = key;
+    }
+    return res;
+}
+
+fn quick_sort(arr: [int]) -> [int] {
+    let n = len(arr);
+    if (n <= 1) {
+        return arr;
+    }
+    let pivot = arr[n / 2];
+    let left: [int] = [];
+    let middle: [int] = [];
+    let right: [int] = [];
+
+    for (let i = 0; i < n; i = i + 1) {
+        let val = arr[i];
+        if (val < pivot) {
+            push(left, val);
+        } else if (val > pivot) {
+            push(right, val);
+        } else {
+            push(middle, val);
+        }
+    }
+
+    let sorted_l = quick_sort(left);
+    let sorted_r = quick_sort(right);
+
+    let out: [int] = [];
+    for (let i = 0; i < len(sorted_l); i = i + 1) {
+        push(out, sorted_l[i]);
+    }
+    for (let i = 0; i < len(middle); i = i + 1) {
+        push(out, middle[i]);
+    }
+    for (let i = 0; i < len(sorted_r); i = i + 1) {
+        push(out, sorted_r[i]);
+    }
+    return out;
+}
+
+fn binary_search(arr: [int], target: int) -> int {
+    let low = 0;
+    let high = len(arr) - 1;
+    while (low <= high) {
+        let mid = (low + high) / 2;
+        if (arr[mid] == target) {
+            return mid;
+        }
+        if (arr[mid] < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+    return -1;
+}
+
+// ── 10. Dynamic Programming ───────────────────────────────────
+
+fn fibonacci_dp(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    }
+    let a = 0;
+    let b = 1;
+    for (let i = 2; i <= n; i = i + 1) {
+        let c = a + b;
+        a = b;
+        b = c;
+    }
+    return b;
+}
+
+fn kadane_max_subarray(arr: [int]) -> int {
+    if (len(arr) == 0) {
+        return 0;
+    }
+    let max_so_far = arr[0];
+    let curr_max = arr[0];
+    for (let i = 1; i < len(arr); i = i + 1) {
+        let v = arr[i];
+        let sum_v = curr_max + v;
+        curr_max = sum_v;
+        if (v > sum_v) {
+            curr_max = v;
+        }
+        if (curr_max > max_so_far) {
+            max_so_far = curr_max;
+        }
+    }
+    return max_so_far;
+}
+
+fn knapsack_01(weights: [int], values: [int], capacity: int) -> int {
+    let dp: [int] = [];
+    for (let w = 0; w <= capacity; w = w + 1) {
+        push(dp, 0);
+    }
+    let n = len(weights);
+
+    for (let i = 0; i < n; i = i + 1) {
+        let wt = weights[i];
+        let val = values[i];
+        for (let w = capacity; w >= wt; w = w - 1) {
+            let candidate = dp[w - wt] + val;
+            if (candidate > dp[w]) {
+                dp[w] = candidate;
+            }
+        }
+    }
+    return dp[capacity];
+}
+
+// ── DSA Module Singleton ──────────────────────────────────────
+
+struct DsaModule {
+    stack: fn,
+    queue: fn,
+    min_heap: fn,
+    linked_list: fn,
+    hash_map: fn,
+    bst: fn,
+    graph: fn,
+    disjoint_set: fn,
+    bubble_sort: fn,
+    insertion_sort: fn,
+    quick_sort: fn,
+    binary_search: fn,
+    fibonacci: fn,
+    max_subarray: fn,
+    knapsack: fn
+}
+
+let dsa = DsaModule {
+    stack: dsa_stack,
+    queue: dsa_queue,
+    min_heap: dsa_min_heap,
+    linked_list: dsa_linked_list,
+    hash_map: dsa_hash_map,
+    bst: dsa_bst,
+    graph: dsa_graph,
+    disjoint_set: dsa_disjoint_set,
+    bubble_sort: bubble_sort,
+    insertion_sort: insertion_sort,
+    quick_sort: quick_sort,
+    binary_search: binary_search,
+    fibonacci: fibonacci_dp,
+    max_subarray: kadane_max_subarray,
+    knapsack: knapsack_01
+};

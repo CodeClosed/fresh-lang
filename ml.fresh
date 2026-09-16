@@ -1,0 +1,903 @@
+// lib/ml.fresh - Lightweight Classical Machine Learning for Fresh
+import "tensor.fresh";
+
+// ── Math Helpers ──────────────────────────────────────────────
+fn _ml_exp(x: float) -> float {
+    // e^x approximation via Taylor series
+    let e = 2.718281828459045;
+    return pow(e, x);
+}
+
+fn _sigmoid(z: float) -> float {
+    if (z > 20.0) {
+        return 1.0;
+    }
+    if (z < -20.0) {
+        return 0.0;
+    }
+    return 1.0 / (1.0 + _ml_exp(-z));
+}
+
+fn _dist_sq(p1: [float], p2: [float]) -> float {
+    let n = len(p1);
+    let s = 0.0;
+    for (let i = 0; i < n; i = i + 1) {
+        let diff = p1[i] - p2[i];
+        s = s + diff * diff;
+    }
+    return s;
+}
+
+// ── Model Structures ──────────────────────────────────────────
+
+struct LinearRegressionModel {
+    fit: fn,
+    predict: fn,
+    score: fn
+}
+
+struct LogisticRegressionModel {
+    fit: fn,
+    predict_proba: fn,
+    predict: fn
+}
+
+struct KMeansModel {
+    fit: fn,
+    predict: fn,
+    get_centroids: fn
+}
+
+struct DecisionTreeModel {
+    fit: fn,
+    predict: fn
+}
+
+struct NaiveBayesModel {
+    fit: fn,
+    predict: fn
+}
+
+struct KNNModel {
+    fit: fn,
+    predict: fn
+}
+
+struct StandardScaler {
+    fit: fn,
+    transform: fn,
+    fit_transform: fn
+}
+
+struct MinMaxScaler {
+    fit: fn,
+    transform: fn,
+    fit_transform: fn
+}
+
+struct TrainTestSplit {
+    X_train: [[float]],
+    X_test: [[float]],
+    y_train: [float],
+    y_test: [float]
+}
+
+// ── Model Implementations ─────────────────────────────────────
+
+fn ml_linear_regression() -> LinearRegressionModel {
+    let weights: [float] = [];
+    let bias = 0.0;
+
+    let fit_fn = fn(X: [[float]], y: [float], lr: float, epochs: int) {
+        let m = len(X);
+        if (m == 0) {
+            return nil;
+        }
+        let n = len(X[0]);
+        weights = [];
+        for (let j = 0; j < n; j = j + 1) {
+            push(weights, 0.0);
+        }
+        bias = 0.0;
+
+        for (let ep = 0; ep < epochs; ep = ep + 1) {
+            let grad_w: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(grad_w, 0.0);
+            }
+            let grad_b = 0.0;
+
+            for (let i = 0; i < m; i = i + 1) {
+                let pred_i = bias;
+                for (let j = 0; j < n; j = j + 1) {
+                    pred_i = pred_i + weights[j] * X[i][j];
+                }
+                let err = pred_i - y[i];
+                for (let j = 0; j < n; j = j + 1) {
+                    grad_w[j] = grad_w[j] + err * X[i][j];
+                }
+                grad_b = grad_b + err;
+            }
+
+            let m_fl = to_float(m);
+            for (let j = 0; j < n; j = j + 1) {
+                weights[j] = weights[j] - lr * (grad_w[j] / m_fl);
+            }
+            bias = bias - lr * (grad_b / m_fl);
+        }
+        return nil;
+    };
+
+    let predict_fn = fn(X: [[float]]) -> [float] {
+        let m = len(X);
+        let n = len(weights);
+        let preds: [float] = [];
+        for (let i = 0; i < m; i = i + 1) {
+            let y_hat = bias;
+            for (let j = 0; j < n; j = j + 1) {
+                y_hat = y_hat + weights[j] * X[i][j];
+            }
+            push(preds, y_hat);
+        }
+        return preds;
+    };
+
+    let score_fn = fn(X: [[float]], y: [float]) -> float {
+        let preds = predict_fn(X);
+        return r2_score(y, preds);
+    };
+
+    return LinearRegressionModel {
+        fit: fit_fn,
+        predict: predict_fn,
+        score: score_fn
+    };
+}
+
+fn ml_logistic_regression() -> LogisticRegressionModel {
+    let weights: [float] = [];
+    let bias = 0.0;
+
+    let fit_fn = fn(X: [[float]], y: [float], lr: float, epochs: int) {
+        let m = len(X);
+        if (m == 0) {
+            return nil;
+        }
+        let n = len(X[0]);
+        weights = [];
+        for (let j = 0; j < n; j = j + 1) {
+            push(weights, 0.0);
+        }
+        bias = 0.0;
+
+        for (let ep = 0; ep < epochs; ep = ep + 1) {
+            let grad_w: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(grad_w, 0.0);
+            }
+            let grad_b = 0.0;
+
+            for (let i = 0; i < m; i = i + 1) {
+                let z = bias;
+                for (let j = 0; j < n; j = j + 1) {
+                    z = z + weights[j] * X[i][j];
+                }
+                let a = _sigmoid(z);
+                let err = a - y[i];
+                for (let j = 0; j < n; j = j + 1) {
+                    grad_w[j] = grad_w[j] + err * X[i][j];
+                }
+                grad_b = grad_b + err;
+            }
+
+            let m_fl = to_float(m);
+            for (let j = 0; j < n; j = j + 1) {
+                weights[j] = weights[j] - lr * (grad_w[j] / m_fl);
+            }
+            bias = bias - lr * (grad_b / m_fl);
+        }
+        return nil;
+    };
+
+    let predict_proba_fn = fn(X: [[float]]) -> [float] {
+        let m = len(X);
+        let n = len(weights);
+        let probs: [float] = [];
+        for (let i = 0; i < m; i = i + 1) {
+            let z = bias;
+            for (let j = 0; j < n; j = j + 1) {
+                z = z + weights[j] * X[i][j];
+            }
+            push(probs, _sigmoid(z));
+        }
+        return probs;
+    };
+
+    let predict_fn = fn(X: [[float]]) -> [int] {
+        let probs = predict_proba_fn(X);
+        let preds: [int] = [];
+        for (let i = 0; i < len(probs); i = i + 1) {
+            if (probs[i] >= 0.5) {
+                push(preds, 1);
+            } else {
+                push(preds, 0);
+            }
+        }
+        return preds;
+    };
+
+    return LogisticRegressionModel {
+        fit: fit_fn,
+        predict_proba: predict_proba_fn,
+        predict: predict_fn
+    };
+}
+
+fn ml_kmeans() -> KMeansModel {
+    let centroids: [[float]] = [];
+    let k_clusters = 0;
+
+    let fit_fn = fn(X: [[float]], k: int, max_iter: int) {
+        let m = len(X);
+        if (m == 0 || k <= 0) {
+            return nil;
+        }
+        k_clusters = k;
+        let n = len(X[0]);
+        centroids = [];
+
+        // Initialize centroids with first k points or spaced
+        for (let i = 0; i < k; i = i + 1) {
+            let pt_idx = (i * m) / k;
+            let c_copy: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(c_copy, X[pt_idx][j]);
+            }
+            push(centroids, c_copy);
+        }
+
+        // Iterative convergence
+        for (let it = 0; it < max_iter; it = it + 1) {
+            let cluster_sums: [[float]] = [];
+            let cluster_counts: [int] = [];
+            for (let ci = 0; ci < k; ci = ci + 1) {
+                let zero_pt: [float] = [];
+                for (let j = 0; j < n; j = j + 1) {
+                    push(zero_pt, 0.0);
+                }
+                push(cluster_sums, zero_pt);
+                push(cluster_counts, 0);
+            }
+
+            for (let i = 0; i < m; i = i + 1) {
+                let min_d = 1000000000.0;
+                let best_c = 0;
+                for (let ci = 0; ci < k; ci = ci + 1) {
+                    let d = _dist_sq(X[i], centroids[ci]);
+                    if (d < min_d) {
+                        min_d = d;
+                        best_c = ci;
+                    }
+                }
+                cluster_counts[best_c] = cluster_counts[best_c] + 1;
+                for (let j = 0; j < n; j = j + 1) {
+                    cluster_sums[best_c][j] = cluster_sums[best_c][j] + X[i][j];
+                }
+            }
+
+            for (let ci = 0; ci < k; ci = ci + 1) {
+                if (cluster_counts[ci] > 0) {
+                    let cnt = to_float(cluster_counts[ci]);
+                    for (let j = 0; j < n; j = j + 1) {
+                        centroids[ci][j] = cluster_sums[ci][j] / cnt;
+                    }
+                }
+            }
+        }
+        return nil;
+    };
+
+    let predict_fn = fn(X: [[float]]) -> [int] {
+        let m = len(X);
+        let preds: [int] = [];
+        for (let i = 0; i < m; i = i + 1) {
+            let min_d = 1000000000.0;
+            let best_c = 0;
+            for (let ci = 0; ci < k_clusters; ci = ci + 1) {
+                let d = _dist_sq(X[i], centroids[ci]);
+                if (d < min_d) {
+                    min_d = d;
+                    best_c = ci;
+                }
+            }
+            push(preds, best_c);
+        }
+        return preds;
+    };
+
+    let get_centroids_fn = fn() -> [[float]] {
+        return centroids;
+    };
+
+    return KMeansModel {
+        fit: fit_fn,
+        predict: predict_fn,
+        get_centroids: get_centroids_fn
+    };
+}
+
+fn ml_decision_tree() -> DecisionTreeModel {
+    let split_feature = -1;
+    let split_val = 0.0;
+    let left_class = 0;
+    let right_class = 0;
+
+    let fit_fn = fn(X: [[float]], y: [int]) {
+        let m = len(X);
+        if (m == 0) {
+            return nil;
+        }
+        let n = len(X[0]);
+
+        let best_gain = -1.0;
+
+        for (let f = 0; f < n; f = f + 1) {
+            for (let i = 0; i < m; i = i + 1) {
+                let thresh = X[i][f];
+                let left_0 = 0;
+                let left_1 = 0;
+                let right_0 = 0;
+                let right_1 = 0;
+
+                for (let k = 0; k < m; k = k + 1) {
+                    if (X[k][f] <= thresh) {
+                        if (y[k] == 0) {
+                            left_0 = left_0 + 1;
+                        } else {
+                            left_1 = left_1 + 1;
+                        }
+                    } else {
+                        if (y[k] == 0) {
+                            right_0 = right_0 + 1;
+                        } else {
+                            right_1 = right_1 + 1;
+                        }
+                    }
+                }
+
+                let l_tot = left_0 + left_1;
+                let r_tot = right_0 + right_1;
+                if (l_tot > 0 && r_tot > 0) {
+                    let gain = to_float(left_0 * left_0 + left_1 * left_1) / to_float(l_tot) +
+                               to_float(right_0 * right_0 + right_1 * right_1) / to_float(r_tot);
+                    if (gain > best_gain) {
+                        best_gain = gain;
+                        split_feature = f;
+                        split_val = thresh;
+                        if (left_1 >= left_0) {
+                            left_class = 1;
+                        } else {
+                            left_class = 0;
+                        }
+                        if (right_1 >= right_0) {
+                            right_class = 1;
+                        } else {
+                            right_class = 0;
+                        }
+                    }
+                }
+            }
+        }
+        return nil;
+    };
+
+    let predict_fn = fn(X: [[float]]) -> [int] {
+        let m = len(X);
+        let preds: [int] = [];
+        for (let i = 0; i < m; i = i + 1) {
+            if (X[i][split_feature] <= split_val) {
+                push(preds, left_class);
+            } else {
+                push(preds, right_class);
+            }
+        }
+        return preds;
+    };
+
+    return DecisionTreeModel {
+        fit: fit_fn,
+        predict: predict_fn
+    };
+}
+
+fn ml_naive_bayes() -> NaiveBayesModel {
+    let classes: [int] = [];
+    let priors: [float] = [];
+    let means: [[float]] = [];
+    let vars: [[float]] = [];
+
+    let fit_fn = fn(X: [[float]], y: [int]) {
+        let m = len(X);
+        if (m == 0) {
+            return nil;
+        }
+        let n = len(X[0]);
+
+        // Find unique classes
+        classes = [];
+        for (let i = 0; i < m; i = i + 1) {
+            let found = false;
+            for (let c = 0; c < len(classes); c = c + 1) {
+                if (classes[c] == y[i]) {
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                push(classes, y[i]);
+            }
+        }
+
+        let num_classes = len(classes);
+        priors = [];
+        means = [];
+        vars = [];
+
+        for (let c_idx = 0; c_idx < num_classes; c_idx = c_idx + 1) {
+            let target_c = classes[c_idx];
+            let count_c = 0;
+            let sum_features: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(sum_features, 0.0);
+            }
+
+            for (let i = 0; i < m; i = i + 1) {
+                if (y[i] == target_c) {
+                    count_c = count_c + 1;
+                    for (let j = 0; j < n; j = j + 1) {
+                        sum_features[j] = sum_features[j] + X[i][j];
+                    }
+                }
+            }
+
+            push(priors, to_float(count_c) / to_float(m));
+            let mean_c: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(mean_c, sum_features[j] / to_float(count_c));
+            }
+            push(means, mean_c);
+
+            let var_features: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(var_features, 0.0);
+            }
+            for (let i = 0; i < m; i = i + 1) {
+                if (y[i] == target_c) {
+                    for (let j = 0; j < n; j = j + 1) {
+                        let diff = X[i][j] - mean_c[j];
+                        var_features[j] = var_features[j] + diff * diff;
+                    }
+                }
+            }
+            let final_var: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                let v = var_features[j] / to_float(count_c);
+                if (v < 0.0001) {
+                    v = 0.0001;
+                }
+                push(final_var, v);
+            }
+            push(vars, final_var);
+        }
+        return nil;
+    };
+
+    let predict_fn = fn(X: [[float]]) -> [int] {
+        let m = len(X);
+        let n = len(X[0]);
+        let preds: [int] = [];
+
+        for (let i = 0; i < m; i = i + 1) {
+            let best_c = classes[0];
+            let best_score = -1000000000.0;
+
+            for (let c = 0; c < len(classes); c = c + 1) {
+                let score = priors[c];
+                for (let j = 0; j < n; j = j + 1) {
+                    let diff = X[i][j] - means[c][j];
+                    let v = vars[c][j];
+                    let exponent = -(diff * diff) / (2.0 * v);
+                    let likelihood = _ml_exp(exponent) / sqrt(6.283185307179586 * v);
+                    score = score * (likelihood + 0.00001);
+                }
+                if (score > best_score) {
+                    best_score = score;
+                    best_c = classes[c];
+                }
+            }
+            push(preds, best_c);
+        }
+        return preds;
+    };
+
+    return NaiveBayesModel {
+        fit: fit_fn,
+        predict: predict_fn
+    };
+}
+
+fn ml_knn() -> KNNModel {
+    let train_X: [[float]] = [];
+    let train_y: [int] = [];
+    let k_neighbors = 3;
+
+    let fit_fn = fn(X: [[float]], y: [int], k: int) {
+        train_X = X;
+        train_y = y;
+        k_neighbors = k;
+        return nil;
+    };
+
+    let predict_fn = fn(X: [[float]]) -> [int] {
+        let m = len(X);
+        let train_sz = len(train_X);
+        let preds: [int] = [];
+
+        for (let i = 0; i < m; i = i + 1) {
+            let distances: [float] = [];
+            let indices: [int] = [];
+            for (let tr = 0; tr < train_sz; tr = tr + 1) {
+                push(distances, _dist_sq(X[i], train_X[tr]));
+                push(indices, tr);
+            }
+
+            // Simple partial sort to find top k nearest
+            for (let p = 0; p < k_neighbors; p = p + 1) {
+                let min_idx = p;
+                for (let q = p + 1; q < train_sz; q = q + 1) {
+                    if (distances[q] < distances[min_idx]) {
+                        min_idx = q;
+                    }
+                }
+                let tmp_d = distances[p];
+                distances[p] = distances[min_idx];
+                distances[min_idx] = tmp_d;
+
+                let tmp_i = indices[p];
+                indices[p] = indices[min_idx];
+                indices[min_idx] = tmp_i;
+            }
+
+            // Majority vote
+            let vote_0 = 0;
+            let vote_1 = 0;
+            for (let p = 0; p < k_neighbors; p = p + 1) {
+                let label = train_y[indices[p]];
+                if (label == 0) {
+                    vote_0 = vote_0 + 1;
+                } else {
+                    vote_1 = vote_1 + 1;
+                }
+            }
+            if (vote_1 >= vote_0) {
+                push(preds, 1);
+            } else {
+                push(preds, 0);
+            }
+        }
+        return preds;
+    };
+
+    return KNNModel {
+        fit: fit_fn,
+        predict: predict_fn
+    };
+}
+
+// ── Feature Scaling ───────────────────────────────────────────
+
+fn ml_standard_scaler() -> StandardScaler {
+    let means: [float] = [];
+    let stds: [float] = [];
+
+    let fit_fn = fn(X: [[float]]) {
+        let m = len(X);
+        if (m == 0) {
+            return nil;
+        }
+        let n = len(X[0]);
+        means = [];
+        stds = [];
+
+        for (let j = 0; j < n; j = j + 1) {
+            let s = 0.0;
+            for (let i = 0; i < m; i = i + 1) {
+                s = s + X[i][j];
+            }
+            let mean = s / to_float(m);
+            push(means, mean);
+
+            let v = 0.0;
+            for (let i = 0; i < m; i = i + 1) {
+                let diff = X[i][j] - mean;
+                v = v + diff * diff;
+            }
+            let std_val = sqrt(v / to_float(m));
+            if (std_val < 0.0001) {
+                std_val = 1.0;
+            }
+            push(stds, std_val);
+        }
+        return nil;
+    };
+
+    let transform_fn = fn(X: [[float]]) -> [[float]] {
+        let m = len(X);
+        let n = len(X[0]);
+        let out: [[float]] = [];
+        for (let i = 0; i < m; i = i + 1) {
+            let row: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                push(row, (X[i][j] - means[j]) / stds[j]);
+            }
+            push(out, row);
+        }
+        return out;
+    };
+
+    let fit_transform_fn = fn(X: [[float]]) -> [[float]] {
+        fit_fn(X);
+        return transform_fn(X);
+    };
+
+    return StandardScaler {
+        fit: fit_fn,
+        transform: transform_fn,
+        fit_transform: fit_transform_fn
+    };
+}
+
+fn ml_min_max_scaler() -> MinMaxScaler {
+    let mins: [float] = [];
+    let maxs: [float] = [];
+
+    let fit_fn = fn(X: [[float]]) {
+        let m = len(X);
+        if (m == 0) {
+            return nil;
+        }
+        let n = len(X[0]);
+        mins = [];
+        maxs = [];
+
+        for (let j = 0; j < n; j = j + 1) {
+            let min_v = X[0][j];
+            let max_v = X[0][j];
+            for (let i = 1; i < m; i = i + 1) {
+                if (X[i][j] < min_v) {
+                    min_v = X[i][j];
+                }
+                if (X[i][j] > max_v) {
+                    max_v = X[i][j];
+                }
+            }
+            push(mins, min_v);
+            push(maxs, max_v);
+        }
+        return nil;
+    };
+
+    let transform_fn = fn(X: [[float]]) -> [[float]] {
+        let m = len(X);
+        let n = len(X[0]);
+        let out: [[float]] = [];
+        for (let i = 0; i < m; i = i + 1) {
+            let row: [float] = [];
+            for (let j = 0; j < n; j = j + 1) {
+                let range_v = maxs[j] - mins[j];
+                if (range_v < 0.0001) {
+                    push(row, 0.0);
+                } else {
+                    push(row, (X[i][j] - mins[j]) / range_v);
+                }
+            }
+            push(out, row);
+        }
+        return out;
+    };
+
+    let fit_transform_fn = fn(X: [[float]]) -> [[float]] {
+        fit_fn(X);
+        return transform_fn(X);
+    };
+
+    return MinMaxScaler {
+        fit: fit_fn,
+        transform: transform_fn,
+        fit_transform: fit_transform_fn
+    };
+}
+
+// ── Train Test Split ──────────────────────────────────────────
+
+fn train_test_split(X: [[float]], y: [float], test_ratio: float) -> TrainTestSplit {
+    let m = len(X);
+    let test_sz = to_int(to_float(m) * test_ratio);
+    let train_sz = m - test_sz;
+
+    let X_tr: [[float]] = [];
+    let y_tr: [float] = [];
+    let X_te: [[float]] = [];
+    let y_te: [float] = [];
+
+    for (let i = 0; i < train_sz; i = i + 1) {
+        push(X_tr, X[i]);
+        push(y_tr, y[i]);
+    }
+    for (let i = train_sz; i < m; i = i + 1) {
+        push(X_te, X[i]);
+        push(y_te, y[i]);
+    }
+
+    return TrainTestSplit {
+        X_train: X_tr,
+        X_test: X_te,
+        y_train: y_tr,
+        y_test: y_te
+    };
+}
+
+// ── Evaluation Metrics ────────────────────────────────────────
+
+fn accuracy_score(y_true: [int], y_pred: [int]) -> float {
+    let n = len(y_true);
+    if (n == 0) {
+        return 0.0;
+    }
+    let correct = 0;
+    for (let i = 0; i < n; i = i + 1) {
+        if (y_true[i] == y_pred[i]) {
+            correct = correct + 1;
+        }
+    }
+    return to_float(correct) / to_float(n);
+}
+
+fn precision_score(y_true: [int], y_pred: [int], target_class: int) -> float {
+    let tp = 0;
+    let fp = 0;
+    for (let i = 0; i < len(y_true); i = i + 1) {
+        if (y_pred[i] == target_class) {
+            if (y_true[i] == target_class) {
+                tp = tp + 1;
+            } else {
+                fp = fp + 1;
+            }
+        }
+    }
+    let denom = tp + fp;
+    if (denom == 0) {
+        return 0.0;
+    }
+    return to_float(tp) / to_float(denom);
+}
+
+fn recall_score(y_true: [int], y_pred: [int], target_class: int) -> float {
+    let tp = 0;
+    let fn_cnt = 0;
+    for (let i = 0; i < len(y_true); i = i + 1) {
+        if (y_true[i] == target_class) {
+            if (y_pred[i] == target_class) {
+                tp = tp + 1;
+            } else {
+                fn_cnt = fn_cnt + 1;
+            }
+        }
+    }
+    let denom = tp + fn_cnt;
+    if (denom == 0) {
+        return 0.0;
+    }
+    return to_float(tp) / to_float(denom);
+}
+
+fn f1_score(y_true: [int], y_pred: [int], target_class: int) -> float {
+    let p = precision_score(y_true, y_pred, target_class);
+    let r = recall_score(y_true, y_pred, target_class);
+    let denom = p + r;
+    if (denom == 0.0) {
+        return 0.0;
+    }
+    return 2.0 * (p * r) / denom;
+}
+
+fn mean_squared_error(y_true: [float], y_pred: [float]) -> float {
+    let n = len(y_true);
+    if (n == 0) {
+        return 0.0;
+    }
+    let s = 0.0;
+    for (let i = 0; i < n; i = i + 1) {
+        let diff = y_true[i] - y_pred[i];
+        s = s + diff * diff;
+    }
+    return s / to_float(n);
+}
+
+fn mean_absolute_error(y_true: [float], y_pred: [float]) -> float {
+    let n = len(y_true);
+    if (n == 0) {
+        return 0.0;
+    }
+    let s = 0.0;
+    for (let i = 0; i < n; i = i + 1) {
+        let diff = abs(y_true[i] - y_pred[i]);
+        s = s + diff;
+    }
+    return s / to_float(n);
+}
+
+fn r2_score(y_true: [float], y_pred: [float]) -> float {
+    let n = len(y_true);
+    if (n == 0) {
+        return 0.0;
+    }
+    let s_y = 0.0;
+    for (let i = 0; i < n; i = i + 1) {
+        s_y = s_y + y_true[i];
+    }
+    let y_mean = s_y / to_float(n);
+
+    let ss_res = 0.0;
+    let ss_tot = 0.0;
+    for (let i = 0; i < n; i = i + 1) {
+        let diff_res = y_true[i] - y_pred[i];
+        let diff_tot = y_true[i] - y_mean;
+        ss_res = ss_res + diff_res * diff_res;
+        ss_tot = ss_tot + diff_tot * diff_tot;
+    }
+    if (ss_tot == 0.0) {
+        return 1.0;
+    }
+    return 1.0 - (ss_res / ss_tot);
+}
+
+// ── ML Module Singleton ───────────────────────────────────────
+
+struct MLModule {
+    linear_regression: fn,
+    logistic_regression: fn,
+    kmeans: fn,
+    decision_tree: fn,
+    naive_bayes: fn,
+    knn: fn,
+    standard_scaler: fn,
+    min_max_scaler: fn,
+    train_test_split: fn,
+    accuracy: fn,
+    precision: fn,
+    recall: fn,
+    f1: fn,
+    mse: fn,
+    mae: fn,
+    r2: fn
+}
+
+let ml = MLModule {
+    linear_regression: ml_linear_regression,
+    logistic_regression: ml_logistic_regression,
+    kmeans: ml_kmeans,
+    decision_tree: ml_decision_tree,
+    naive_bayes: ml_naive_bayes,
+    knn: ml_knn,
+    standard_scaler: ml_standard_scaler,
+    min_max_scaler: ml_min_max_scaler,
+    train_test_split: train_test_split,
+    accuracy: accuracy_score,
+    precision: precision_score,
+    recall: recall_score,
+    f1: f1_score,
+    mse: mean_squared_error,
+    mae: mean_absolute_error,
+    r2: r2_score
+};
