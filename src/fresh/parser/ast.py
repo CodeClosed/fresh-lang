@@ -239,6 +239,14 @@ class ExprStmt(Stmt):
 
 
 @dataclass(slots=True)
+class PrintStmt(Stmt):
+    """Print statement: print expr;"""
+
+    keyword: "Token"
+    value: Expr
+
+
+@dataclass(slots=True)
 class VarDeclStmt(Stmt):
     """Variable declaration: let name [: type] = expr;"""
 

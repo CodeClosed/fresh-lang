@@ -17,6 +17,9 @@ from fresh.vm.objects import (
     ObjStructDef,
     ObjStructInstance,
     ObjUpvalue,
+    ObjClass,
+    ObjInstance,
+    ObjBoundMethod,
 )
 from fresh.vm.value import is_falsey, value_to_string
 
@@ -36,6 +39,7 @@ class VM:
         self.frames: list[CallFrame] = []
         self.globals: dict[str, Any] = {}
         self.struct_defs: dict[str, ObjStructDef] = {}
+        self.class_defs: dict[str, ObjClass] = {}
         self.open_upvalues: list[ObjUpvalue] = []
         self.objects: list[Obj] = []
 
@@ -188,6 +192,15 @@ class VM:
                 case Opcode.OP_NOT:
                     a = self.pop()
                     self.push(is_falsey(a))
+
+                # ── Print Statement ────────────────────────
+                case Opcode.OP_PRINT:
+                    # Pop the value to print, output it, then push nil (or None) as per language semantics
+                    value = self.pop()
+                    # Convert to string using existing utility
+                    print(value_to_string(value))
+                    # Push nil onto the stack to keep stack height consistent
+                    self.push(None)
 
                 # ── Comparisons ───────────────────────────────
                 case Opcode.OP_EQUAL:
@@ -367,20 +380,73 @@ class VM:
                     self.push(instance)  # Root instance on stack
                     self.gc.allocate(instance)
 
-                case Opcode.OP_GET_FIELD:
-                    field_idx = code[frame.ip]
+                
+                # ── Classes & OOP ────────────────────────────────────
+                case Opcode.OP_CLASS_DEF:
+                    # Load class name and field count
+                    name_idx = code[frame.ip]
+                    field_count = code[frame.ip + 1]
+                    frame.ip += 2
+                    name = chunk.constants[name_idx]
+                    # Expect a list of field names constant next
+                    fields_idx = code[frame.ip]
                     frame.ip += 1
-                    field_name = chunk.constants[field_idx]
+                    field_names = chunk.constants[fields_idx]
+                    if not isinstance(field_names, list) or len(field_names) != field_count:
+                        raise FreshRuntimeError("Class field names constant mismatch.")
+                    klass = ObjClass(name, field_names)
+                    self.gc.allocate(klass)
+                    self.class_defs[name] = klass
+                    # Push the class object onto the stack for method binding
+                    self.push(klass)
 
-                    instance = self.pop()
-                    if not isinstance(instance, ObjStructInstance):
-                        raise FreshRuntimeError("Only struct instances have fields.")
+                case Opcode.OP_METHOD:
+                    # Bind a method (closure) to the class on the stack (just below the closure)
+                    method_name_idx = code[frame.ip]
+                    frame.ip += 1
+                    method_name = chunk.constants[method_name_idx]
+                    method_closure = self.pop()  # closure produced by previous OP_CLOSURE
+                    klass_obj = self.peek()
+                    if not isinstance(klass_obj, ObjClass):
+                        raise FreshRuntimeError("OP_METHOD expects a class on the stack.")
+                    klass_obj.methods[method_name] = method_closure
+                    # Keep the class on stack for further method bindings
+                    self.push(klass_obj)
 
-                    if field_name not in instance.struct_def.field_indices:
-                        raise FreshRuntimeError(f"Undefined field '{field_name}' on struct '{instance.struct_def.name}'.")
-                    slot = instance.struct_def.field_indices[field_name]
-                    self.push(instance.fields[slot])
+                case Opcode.OP_INHERIT:
+                    # Inherit methods and fields from a superclass
+                    subclass = self.pop()
+                    superclass = self.pop()
+                    if not isinstance(subclass, ObjClass) or not isinstance(superclass, ObjClass):
+                        raise FreshRuntimeError("OP_INHERIT expects two class objects.")
+                    subclass.inherit_from(superclass)
+                    self.push(subclass)
 
+                case Opcode.OP_GET_THIS:
+                    # Push the implicit 'this' (slot 0 of the current call frame)
+                    self.push(self.stack[frame.stack_base])
+
+                case Opcode.OP_SUPER_INVOKE:
+                    method_name_idx = code[frame.ip]
+                    arg_count = code[frame.ip + 1]
+                    frame.ip += 2
+                    method_name = chunk.constants[method_name_idx]
+                    # The instance (this) is at the base of the current frame
+                    instance = self.stack[frame.stack_base]
+                    if not isinstance(instance, ObjInstance):
+                        raise FreshRuntimeError("OP_SUPER_INVOKE requires a class instance as 'this'.")
+                    superclass = instance.klass.parent
+                    if superclass is None:
+                        raise FreshRuntimeError(f"Class '{instance.klass.name}' has no superclass for super call.")
+                    method = superclass.lookup_method(method_name)
+                    if method is None:
+                        raise FreshRuntimeError(f"Undefined method '{method_name}' in superclass '{superclass.name}'.")
+                    # Bind the method to the instance
+                    bound = ObjBoundMethod(instance, method)
+                    self.gc.allocate(bound)
+                    self.push(bound)
+                    # Call the bound method with the provided arguments
+                    self._call_value(bound, arg_count)
                 case Opcode.OP_SET_FIELD:
                     field_idx = code[frame.ip]
                     frame.ip += 1

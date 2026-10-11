@@ -36,6 +36,7 @@ from fresh.parser.ast import (
     ContinueStmt,
     Expr,
     ExprStmt,
+    PrintStmt,
     FieldAccessExpr,
     FieldSetExpr,
     FnDeclStmt,
@@ -118,22 +119,22 @@ class Parser:
         # ── Pratt tables ──────────────────────────────────────
 
         self._prefix_rules: dict[TokenType, Callable[[], Expr]] = {
-            TokenType.INT_LIT: self._literal,
-            TokenType.FLOAT_LIT: self._literal,
-            TokenType.STRING_LIT: self._literal,
-            TokenType.TRUE: self._literal,
-            TokenType.FALSE: self._literal,
-            TokenType.NIL: self._literal,
-            TokenType.IDENTIFIER: self._variable,
-            TokenType.LEFT_PAREN: self._grouping,
-            TokenType.MINUS: self._unary,
-            TokenType.BANG: self._unary,
-            TokenType.LEFT_BRACKET: self._array_literal,
-            TokenType.FN: self._lambda,
-            TokenType.MATCH: self._match_expr,
-            TokenType.THIS: self._this_expr,
-            TokenType.SUPER: self._super_expr,
-        }
+    TokenType.INT_LIT: self._literal,
+    TokenType.FLOAT_LIT: self._literal,
+    TokenType.STRING_LIT: self._literal,
+    TokenType.TRUE: self._literal,
+    TokenType.FALSE: self._literal,
+    TokenType.NIL: self._literal,
+    TokenType.IDENTIFIER: self._variable,
+    TokenType.LEFT_PAREN: self._grouping,
+    TokenType.MINUS: self._unary,
+    TokenType.BANG: self._unary,
+    TokenType.LEFT_BRACKET: self._array_literal,
+    TokenType.FN: self._lambda,
+    TokenType.MATCH: self._match_expr,
+    TokenType.THIS: self._this_expr,
+    TokenType.SUPER: self._super_expr,
+}
 
         self._infix_rules: dict[TokenType, Callable[[Expr], Expr]] = {
             TokenType.PLUS: self._binary,
@@ -228,8 +229,11 @@ class Parser:
         """Parse a declaration or fall through to a statement."""
         if self._match(TokenType.LET):
             return self._var_declaration()
+        if self._match(TokenType.VAR):
+            return self._var_declaration()
         if self._match(TokenType.FN):
             return self._fn_declaration()
+
         if self._match(TokenType.STRUCT):
             return self._struct_declaration()
         if self._match(TokenType.IMPORT):
@@ -305,9 +309,10 @@ class Parser:
 
         # Optional parent class
         parent_name: Token | None = None
-        if self._match(TokenType.COLON):
-            parent_name = self._consume(TokenType.IDENTIFIER, "Expected parent class name after ':'.")
-
+        if self._match(TokenType.COLON) or self._match(TokenType.EXTENDS):
+            # Accept ':' or 'extends' keyword before parent class name
+            parent_name = self._consume(TokenType.IDENTIFIER, "Expected parent class name after inheritance specifier.")
+        
         self._consume(TokenType.LEFT_BRACE, "Expected '{' after class name.")
 
         fields: list[StructField] = []
@@ -321,16 +326,27 @@ class Parser:
                     raise self._error(self._previous(), "A class can only have one constructor.")
                 constructor = self._constructor_declaration()
             elif self._match(TokenType.FN):
-                # Method declaration
+                # Method declaration with 'fn'
                 method_name = self._consume(TokenType.IDENTIFIER, "Expected method name after 'fn'.")
+                method = self._fn_body(method_name)
+                methods.append(method)
+            # Method declaration without 'fn' (identifier followed by '(')
+            elif self._check(TokenType.IDENTIFIER) and (self._current + 1 < len(self.tokens) and self.tokens[self._current + 1].type == TokenType.LEFT_PAREN):
+                method_name = self._consume(TokenType.IDENTIFIER, "Expected method name.")
                 method = self._fn_body(method_name)
                 methods.append(method)
             else:
                 # Field declaration: name: type
+                # Optional 'var' keyword before field name
+                if self._match(TokenType.VAR):
+                    # consumed 'var' keyword
+                    pass
                 field_name = self._consume(TokenType.IDENTIFIER, "Expected field name, 'constructor', or 'fn' in class body.")
-                self._consume(TokenType.COLON, "Expected ':' after field name.")
-                field_type = self._type_annotation()
+                field_type = None
+                if self._match(TokenType.COLON):
+                    field_type = self._type_annotation()
                 fields.append(StructField(name=field_name, type_annotation=field_type))
+                self._consume(TokenType.SEMICOLON, "Expected ';' after field declaration.")
                 # Optional comma separator between fields
                 if not self._check(TokenType.RIGHT_BRACE) and not self._check(TokenType.CONSTRUCTOR) and not self._check(TokenType.FN):
                     self._match(TokenType.COMMA)  # optional comma
@@ -356,18 +372,8 @@ class Parser:
         super_args: list[Expr] | None = None
         body_stmts: list[Stmt] = []
 
-        # Check if the first statement is a super() call
-        if self._check(TokenType.SUPER) and self._peek_next_is(TokenType.LEFT_PAREN):
-            self._advance()  # consume 'super'
-            self._consume(TokenType.LEFT_PAREN, "Expected '(' after 'super'.")
-            super_args = []
-            if not self._check(TokenType.RIGHT_PAREN):
-                while True:
-                    super_args.append(self._expression())
-                    if not self._match(TokenType.COMMA):
-                        break
-            self._consume(TokenType.RIGHT_PAREN, "Expected ')' after super arguments.")
-            self._consume(TokenType.SEMICOLON, "Expected ';' after super() call.")
+        # For now, ignore special super call syntax; parse body statements normally.
+        super_args = None
 
         # Parse remaining body
         while not self._check(TokenType.RIGHT_BRACE) and not self._is_at_end():
@@ -389,8 +395,11 @@ class Parser:
                 if len(params) >= 255:
                     raise self._error(self._peek(), "Cannot have more than 255 parameters.")
                 param_name = self._consume(TokenType.IDENTIFIER, "Expected parameter name.")
-                self._consume(TokenType.COLON, "Expected ':' after parameter name.")
-                type_ann = self._type_annotation()
+                # Optional type annotation for parameter
+                if self._match(TokenType.COLON):
+                    type_ann = self._type_annotation()
+                else:
+                    type_ann = None
                 params.append(Parameter(name=param_name, type_annotation=type_ann))
                 if not self._match(TokenType.COMMA):
                     break
@@ -449,12 +458,30 @@ class Parser:
                 return self._break_statement()
             if self._match(TokenType.CONTINUE):
                 return self._continue_statement()
+            if self._match(TokenType.PRINT):
+                return self._print_statement()
             if self._check(TokenType.LEFT_BRACE):
                 self._advance()
                 return BlockStmt(statements=self._block_body())
             return self._expression_statement()
         finally:
             self.recursion_depth -= 1
+def _declaration_or_statement(self) -> Stmt:
+    """Dispatch to a declaration parser if a declaration token is present, otherwise a statement parser."""
+    if self._match(TokenType.LET):
+        return self._var_declaration()
+    if self._match(TokenType.VAR):
+        return self._var_declaration()
+    if self._match(TokenType.FN):
+        return self._fn_declaration()
+    if self._match(TokenType.STRUCT):
+        return self._struct_declaration()
+    if self._match(TokenType.IMPORT):
+        return self._import_declaration()
+    if self._match(TokenType.CLASS):
+        return self._class_declaration()
+    # No declaration token; parse as a regular statement/expression.
+    return self._statement()
 
     def _if_statement(self) -> IfStmt:
         """Parse: ``if (cond) { ... } [else { ... } | else if ...]``"""
@@ -559,6 +586,13 @@ class Parser:
             self._consume(TokenType.SEMICOLON, "Expected ';' after expression.")
         return ExprStmt(expression=expr)
 
+    def _print_statement(self) -> PrintStmt:
+        """Parse: ``print <expr> ;``"""
+        keyword = self._previous()
+        value = self._expression()
+        self._consume(TokenType.SEMICOLON, "Expected ';' after print statement.")
+        return PrintStmt(keyword=keyword, value=value)
+
     def _block_statements(self) -> list[Stmt]:
         """Consume ``{`` then parse declarations until ``}``."""
         self._consume(TokenType.LEFT_BRACE, "Expected '{'.")
@@ -568,7 +602,7 @@ class Parser:
         """Parse the interior of a block (``{`` already consumed)."""
         statements: list[Stmt] = []
         while not self._check(TokenType.RIGHT_BRACE) and not self._is_at_end():
-            statements.append(self._declaration())
+            statements.append(self._declaration_or_statement())
         self._consume(TokenType.RIGHT_BRACE, "Expected '}'.")
         return statements
 
@@ -700,10 +734,18 @@ class Parser:
         return ThisExpr(keyword=self._previous())
 
     def _super_expr(self) -> Expr:
-        """Parse ``super.method_name`` access."""
+        """Parse ``super.method_name`` access. Supports constructor call via ``super.init``.
+        """
         keyword = self._previous()
         self._consume(TokenType.DOT, "Expected '.' after 'super'.")
-        method = self._consume(TokenType.IDENTIFIER, "Expected superclass method name after 'super.'.")
+        # Allow either an identifier (regular method) or the CONSTRUCTOR token (init) as the method name.
+        if self._check(TokenType.IDENTIFIER):
+            method = self._consume(TokenType.IDENTIFIER, "Expected superclass method name after 'super'.")
+        elif self._match(TokenType.CONSTRUCTOR):
+            # The token 'init' is lexed as CONSTRUCTOR; treat it as method name for super calls.
+            method = self._previous()
+        else:
+            raise self._error(self._peek(), "Expected superclass method name or 'init' after 'super'.")
         return SuperExpr(keyword=keyword, method=method)
 
     def _match_expr(self) -> Expr:

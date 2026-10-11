@@ -26,6 +26,7 @@ from fresh.parser.ast import (
     ContinueStmt,
     Expr,
     ExprStmt,
+    PrintStmt,
     FieldAccessExpr,
     FieldSetExpr,
     FnDeclStmt,
@@ -396,6 +397,11 @@ class Compiler:
                 self._compile_expr(expr)
                 self._emit_opcode(Opcode.OP_POP)
 
+            case PrintStmt(keyword=kw, value=val):
+                self.current_line = kw.line
+                self._compile_expr(val)
+                self._emit_opcode(Opcode.OP_PRINT)
+
             case IfStmt(keyword=kw, condition=cond, then_branch=then_b, else_branch=else_b):
                 self.current_line = kw.line
                 self._compile_expr(cond)
@@ -599,7 +605,9 @@ class Compiler:
                     self._emit_opcode(Opcode.OP_GET_THIS)
                     for arg in args:
                         self._compile_expr(arg)
-                    method_idx = self.chunk.add_constant(callee.method.lexeme)
+                    # Translate constructor name 'init' to internal method name 'constructor'
+                    method_name = "constructor" if callee.method.lexeme == "init" else callee.method.lexeme
+                    method_idx = self.chunk.add_constant(method_name)
                     self._emit_opcode(Opcode.OP_SUPER_INVOKE)
                     self._emit_byte(method_idx)
                     self._emit_byte(len(args))
@@ -668,7 +676,9 @@ class Compiler:
             case SuperExpr(keyword=kw, method=method):
                 self.current_line = kw.line
                 self._emit_opcode(Opcode.OP_GET_THIS)
-                method_idx = self.chunk.add_constant(method.lexeme)
+                # Translate constructor name 'init' to internal method name 'constructor'
+                method_name = "constructor" if method.lexeme == "init" else method.lexeme
+                method_idx = self.chunk.add_constant(method_name)
                 self._emit_opcode(Opcode.OP_SUPER_INVOKE)
                 self._emit_byte(method_idx)
                 self._emit_byte(0)

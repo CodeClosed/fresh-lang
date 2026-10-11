@@ -76,3 +76,4 @@ class Opcode(IntEnum):
     OP_INHERIT = auto()        # [subclass, superclass] -> copy superclass methods to subclass
     OP_GET_THIS = auto()       # -> push this (stack[frame.stack_base])
     OP_SUPER_INVOKE = auto()   # [method_name_idx, arg_count] -> invoke method on superclass
+    OP_PRINT = auto()       # [value] -> print(value) and push nil
