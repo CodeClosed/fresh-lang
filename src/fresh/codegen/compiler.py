@@ -291,15 +291,17 @@ class Compiler:
                 name_idx = self.chunk.add_constant(name.lexeme)
                 field_names = [f.name.lexeme for f in fields]
                 fields_idx = self.chunk.add_constant(field_names)
-                self._emit_opcode(Opcode.OP_CLASS_DEF)
-                self._emit_byte(name_idx)
-                self._emit_byte(fields_idx)
-
-                # If subclass, inherit from parent
+                # If subclass, emit superclass first
                 if parent is not None:
                     parent_const = self.chunk.add_constant(parent.lexeme)
                     self._emit_opcode(Opcode.OP_GET_GLOBAL)
                     self._emit_byte(parent_const)
+                # Emit class definition (creates subclass)
+                self._emit_opcode(Opcode.OP_CLASS_DEF)
+                self._emit_byte(name_idx)
+                self._emit_byte(fields_idx)
+                # If subclass, now inherit (subclass on top, superclass below)
+                if parent is not None:
                     self._emit_opcode(Opcode.OP_INHERIT)
 
                 # Compile constructor if present

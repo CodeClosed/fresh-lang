@@ -512,6 +512,9 @@ class ASTPrinter:
             case ExprStmt(expression=expr):
                 return f"{pad}ExprStmt {self._expr(expr)}"
 
+            case PrintStmt(value=val):
+                return f"{pad}Print {self._expr(val)}"
+
             case ImportStmt(module_token=mod_tok):
                 return f"{pad}Import {mod_tok.lexeme}"
 
@@ -613,7 +616,9 @@ class ASTPrinter:
 
     # ── Type Formatting ───────────────────────────────────────
 
-    def _type(self, ta: TypeAnnotation) -> str:
+    def _type(self, ta: TypeAnnotation | None) -> str:
+        if ta is None:
+            return "any"
         if ta.element_type is not None:
             return f"[{self._type(ta.element_type)}]"
         return ta.name.lexeme

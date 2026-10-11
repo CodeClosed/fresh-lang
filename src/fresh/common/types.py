@@ -157,6 +157,11 @@ class FreshClass(FreshType):
         """Walk the inheritance chain to find a method."""
         if method_name in self.methods:
             return self.methods[method_name]
+        if method_name in ("init", "constructor"):
+            if "init" in self.methods:
+                return self.methods["init"]
+            if "constructor" in self.methods:
+                return self.methods["constructor"]
         if self.parent is not None:
             return self.parent.lookup_method(method_name)
         return None

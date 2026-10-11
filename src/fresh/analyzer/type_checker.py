@@ -166,7 +166,9 @@ class TypeChecker:
                         class_type.methods[m.name.lexeme] = FreshFunction(param_types=m_param_types, return_type=m_ret_type)
                     if ctor is not None:
                         c_param_types = [self._resolve_type_annotation(p.type_annotation) for p in ctor.params]
-                        class_type.methods["constructor"] = FreshFunction(param_types=c_param_types, return_type=class_type)
+                        ctor_fn = FreshFunction(param_types=c_param_types, return_type=class_type)
+                        class_type.methods["constructor"] = ctor_fn
+                        class_type.methods["init"] = ctor_fn
                     self.class_defs[name.lexeme] = class_type
                     self.current_scope.define(name.lexeme, Symbol(name=name.lexeme, type=class_type, is_defined=True))
 
@@ -763,7 +765,10 @@ class TypeChecker:
                         column=keyword.column,
                         filename=self.filename,
                     )
-                parent_method = self.current_class.parent.lookup_method(method.lexeme)
+                lookup_name = "constructor" if method.lexeme == "init" else method.lexeme
+                parent_method = self.current_class.parent.lookup_method(lookup_name)
+                if parent_method is None:
+                    parent_method = self.current_class.parent.lookup_method(method.lexeme)
                 if parent_method is None:
                     raise FreshTypeError(
                         message=f"Superclass '{self.current_class.parent.name}' has no method '{method.lexeme}'.",

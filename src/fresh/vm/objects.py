@@ -172,6 +172,11 @@ class ObjClass(Obj):
     def lookup_method(self, method_name: str) -> ObjClosure | None:
         if method_name in self.methods:
             return self.methods[method_name]
+        if method_name in ("init", "constructor"):
+            if "init" in self.methods:
+                return self.methods["init"]
+            if "constructor" in self.methods:
+                return self.methods["constructor"]
         if self.parent is not None:
             return self.parent.lookup_method(method_name)
         return None
@@ -224,7 +229,13 @@ class ObjInstance(Obj):
                 self.fields.extend([None] * (idx - len(self.fields) + 1))
             self.fields[idx] = value
             return True
-        return False
+        else:
+            self.klass.field_names.append(name)
+            idx = len(self.klass.field_names) - 1
+            self.klass.field_indices[name] = idx
+            self.fields.extend([None] * (idx - len(self.fields) + 1))
+            self.fields[idx] = value
+            return True
 
     def trace_references(self, worklist: list[Obj]) -> None:
         if not self.klass.is_marked:

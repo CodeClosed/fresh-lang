@@ -383,17 +383,11 @@ class VM:
                 
                 # ── Classes & OOP ────────────────────────────────────
                 case Opcode.OP_CLASS_DEF:
-                    # Load class name and field count
                     name_idx = code[frame.ip]
-                    field_count = code[frame.ip + 1]
+                    fields_idx = code[frame.ip + 1]
                     frame.ip += 2
                     name = chunk.constants[name_idx]
-                    # Expect a list of field names constant next
-                    fields_idx = code[frame.ip]
-                    frame.ip += 1
                     field_names = chunk.constants[fields_idx]
-                    if not isinstance(field_names, list) or len(field_names) != field_count:
-                        raise FreshRuntimeError("Class field names constant mismatch.")
                     klass = ObjClass(name, field_names)
                     self.gc.allocate(klass)
                     self.class_defs[name] = klass
@@ -410,8 +404,10 @@ class VM:
                     if not isinstance(klass_obj, ObjClass):
                         raise FreshRuntimeError("OP_METHOD expects a class on the stack.")
                     klass_obj.methods[method_name] = method_closure
-                    # Keep the class on stack for further method bindings
-                    self.push(klass_obj)
+                    if method_name == "constructor":
+                        klass_obj.methods["init"] = method_closure
+                    elif method_name == "init":
+                        klass_obj.methods["constructor"] = method_closure
 
                 case Opcode.OP_INHERIT:
                     # Inherit methods and fields from a superclass
@@ -431,22 +427,48 @@ class VM:
                     arg_count = code[frame.ip + 1]
                     frame.ip += 2
                     method_name = chunk.constants[method_name_idx]
-                    # The instance (this) is at the base of the current frame
-                    instance = self.stack[frame.stack_base]
+                    instance = self.stack[self.stack_top - arg_count - 1]
+                    if not isinstance(instance, ObjInstance):
+                        instance = self.stack[frame.stack_base]
                     if not isinstance(instance, ObjInstance):
                         raise FreshRuntimeError("OP_SUPER_INVOKE requires a class instance as 'this'.")
                     superclass = instance.klass.parent
                     if superclass is None:
                         raise FreshRuntimeError(f"Class '{instance.klass.name}' has no superclass for super call.")
                     method = superclass.lookup_method(method_name)
+                    if method is None and method_name == "init":
+                        method = superclass.lookup_method("constructor")
                     if method is None:
                         raise FreshRuntimeError(f"Undefined method '{method_name}' in superclass '{superclass.name}'.")
-                    # Bind the method to the instance
-                    bound = ObjBoundMethod(instance, method)
-                    self.gc.allocate(bound)
-                    self.push(bound)
-                    # Call the bound method with the provided arguments
-                    self._call_value(bound, arg_count)
+                    self.stack[self.stack_top - arg_count - 1] = instance
+                    self._call_value(method, arg_count)
+                    frame = self.frames[-1]
+
+                case Opcode.OP_GET_FIELD:
+                    field_idx = code[frame.ip]
+                    frame.ip += 1
+                    field_name = chunk.constants[field_idx]
+
+                    instance = self.pop()
+                    if isinstance(instance, ObjStructInstance):
+                        if field_name not in instance.struct_def.field_indices:
+                            raise FreshRuntimeError(f"Undefined field '{field_name}' on struct '{instance.struct_def.name}'.")
+                        slot = instance.struct_def.field_indices[field_name]
+                        self.push(instance.fields[slot])
+                    elif isinstance(instance, ObjInstance):
+                        if field_name in instance.klass.field_indices:
+                            self.push(instance.get_field(field_name))
+                        else:
+                            method = instance.klass.lookup_method(field_name)
+                            if method is not None:
+                                bound = ObjBoundMethod(instance, method)
+                                self.gc.allocate(bound)
+                                self.push(bound)
+                            else:
+                                raise FreshRuntimeError(f"Undefined property '{field_name}' on instance of '{instance.klass.name}'.")
+                    else:
+                        raise FreshRuntimeError(f"Only struct or class instances have fields, got {type(instance).__name__}.")
+
                 case Opcode.OP_SET_FIELD:
                     field_idx = code[frame.ip]
                     frame.ip += 1
@@ -454,14 +476,17 @@ class VM:
 
                     value = self.pop()
                     instance = self.pop()
-                    if not isinstance(instance, ObjStructInstance):
-                        raise FreshRuntimeError("Only struct instances have fields.")
-
-                    if field_name not in instance.struct_def.field_indices:
-                        raise FreshRuntimeError(f"Undefined field '{field_name}' on struct '{instance.struct_def.name}'.")
-                    slot = instance.struct_def.field_indices[field_name]
-                    instance.fields[slot] = value
-                    self.push(value)
+                    if isinstance(instance, ObjStructInstance):
+                        if field_name not in instance.struct_def.field_indices:
+                            raise FreshRuntimeError(f"Undefined field '{field_name}' on struct '{instance.struct_def.name}'.")
+                        slot = instance.struct_def.field_indices[field_name]
+                        instance.fields[slot] = value
+                        self.push(value)
+                    elif isinstance(instance, ObjInstance):
+                        instance.set_field(field_name, value)
+                        self.push(value)
+                    else:
+                        raise FreshRuntimeError(f"Only struct or class instances have fields, got {type(instance).__name__}.")
 
                 # ── Arrays ────────────────────────────────────
                 case Opcode.OP_BUILD_ARRAY:
@@ -535,6 +560,21 @@ class VM:
             self.pop()  # Pop the native function object
             result = callee.function(*args)
             self.push(result)
+
+        elif isinstance(callee, ObjClass):
+            instance = ObjInstance(callee)
+            self.gc.allocate(instance)
+            self.stack[self.stack_top - arg_count - 1] = instance
+            ctor = callee.lookup_method("constructor")
+            if ctor is not None:
+                self._call_value(ctor, arg_count)
+            else:
+                if arg_count != 0:
+                    raise FreshRuntimeError(f"Class '{callee.name}' takes no constructor arguments, got {arg_count}.")
+
+        elif isinstance(callee, ObjBoundMethod):
+            self.stack[self.stack_top - arg_count - 1] = callee.receiver
+            self._call_value(callee.method, arg_count)
 
         else:
             raise FreshRuntimeError(f"Cannot call non-callable type '{type(callee).__name__}'.")

@@ -235,6 +235,41 @@ let content = read_file(sample_file);
 
 println("Read back content length: " + to_string(len(content)) + " bytes");
 
+println("\n[9] OBJECT-ORIENTED PROGRAMMING (OOP)");
+
+class Vehicle {
+    var brand;
+    var speed;
+
+    init(brand, speed) {
+        this.brand = brand;
+        this.speed = speed;
+    }
+
+    fn describe() {
+        print "<" + this.brand + "> traveling at " + to_string(this.speed) + " km/h";
+    }
+}
+
+class Car extends Vehicle {
+    var seats;
+
+    init(brand, speed, seats) {
+        super.init(brand, speed);
+        this.seats = seats;
+    }
+
+    fn describe() {
+        print "<" + this.brand + "> Car with " + to_string(this.seats) + " seats, at " + to_string(this.speed) + " km/h";
+    }
+}
+
+let v = Vehicle("GenericTransit", 40);
+let c = Car("Tesla", 120, 5);
+
+v.describe();
+c.describe();
+
 println("\n================================================================");
 
 println("         [SUCCESS] ALL FRESH LANGUAGE FEATURES PASSED!          ");

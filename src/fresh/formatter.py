@@ -16,6 +16,7 @@ from fresh.parser.ast import (
     BlockStmt,
     BreakStmt,
     CallExpr,
+    ClassDeclStmt,
     ContinueStmt,
     Expr,
     ExprStmt,
@@ -32,11 +33,14 @@ from fresh.parser.ast import (
     LiteralPattern,
     LogicalExpr,
     MatchExpr,
+    PrintStmt,
     ReturnStmt,
     Stmt,
     StructDeclStmt,
     StructLiteralExpr,
     StructPattern,
+    SuperExpr,
+    ThisExpr,
     TypeAnnotation,
     UnaryExpr,
     VarDeclStmt,
@@ -95,6 +99,31 @@ class FreshFormatter:
                 ]
                 fields_s = ", ".join(field_strs)
                 return f"{pad}struct {name.lexeme} {{ {fields_s} }}"
+
+            case ClassDeclStmt(name=name, parent_name=parent, fields=fields, constructor=ctor, methods=methods):
+                parent_s = f" : {parent.lexeme}" if parent else ""
+                header = f"{pad}class {name.lexeme}{parent_s} {{"
+                body_parts: list[str] = []
+                inner_pad = "    " * (indent + 1)
+                for f in fields:
+                    t_str = f": {self._format_type(f.type_annotation)}" if f.type_annotation else ""
+                    body_parts.append(f"{inner_pad}var {f.name.lexeme}{t_str};")
+                if ctor:
+                    ctor_params = ", ".join(
+                        f"{p.name.lexeme}{(': ' + self._format_type(p.type_annotation)) if p.type_annotation else ''}"
+                        for p in ctor.params
+                    )
+                    ctor_header = f"{inner_pad}{ctor.keyword.lexeme}({ctor_params}) {{"
+                    ctor_body = [self._format_stmt(s, indent + 2) for s in ctor.body]
+                    body_parts.append(ctor_header + "\n" + "\n".join(ctor_body) + f"\n{inner_pad}}}")
+                for m in methods:
+                    body_parts.append(self._format_stmt(m, indent + 1))
+                if not body_parts:
+                    return f"{header} }}"
+                return header + "\n" + "\n".join(body_parts) + f"\n{pad}}}"
+
+            case PrintStmt(value=val):
+                return f"{pad}print {self._format_expr(val)};"
 
             case BlockStmt(statements=stmts):
                 if not stmts:
@@ -263,6 +292,12 @@ class FreshFormatter:
                 body_lines = [self._format_stmt(s, indent=1) for s in body]
                 return header + "\n" + "\n".join(body_lines) + "\n}"
 
+            case ThisExpr():
+                return "this"
+
+            case SuperExpr(method=method):
+                return f"super.{method.lexeme}"
+
             case _:
                 return f"/* unhandled expr {type(expr).__name__} */"
 
@@ -290,7 +325,9 @@ class FreshFormatter:
             case _:
                 return "_"
 
-    def _format_type(self, ta: TypeAnnotation) -> str:
+    def _format_type(self, ta: TypeAnnotation | None) -> str:
+        if ta is None:
+            return ""
         if ta.element_type is not None:
             return f"[{self._format_type(ta.element_type)}]"
         return ta.name.lexeme

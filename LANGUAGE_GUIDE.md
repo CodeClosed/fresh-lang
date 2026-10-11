@@ -22,6 +22,7 @@ This guide provides a comprehensive, beginner-friendly walkthrough of the langua
 12. [Module Import System](#12-module-import-system)
 13. [Standard Library Reference](#13-standard-library-reference)
 14. [CLI Developer Tooling](#14-cli-developer-tooling)
+15. [Classes & Object-Oriented Programming](#15-classes--object-oriented-programming)
 
 ---
 
@@ -579,4 +580,78 @@ fresh> greet("Fresh")
 Hello, Fresh
 fresh> exit()
 ```
+
+---
+
+## 15. Classes & Object-Oriented Programming
+
+Fresh provides full C++/Java-style Object-Oriented Programming support alongside its lightweight `struct` data records. Classes support fields, constructors, methods, `this`, single inheritance, and method overriding.
+
+### 15.1 Class Declaration & Instantiation
+
+Classes define structured types with both state and behavior:
+
+```fresh
+class Animal {
+    var name: string;
+    var age: int;
+
+    // Constructor (using 'constructor' or 'init')
+    constructor(name: string, age: int) {
+        this.name = name;
+        this.age = age;
+    }
+
+    fn speak() -> string {
+        return this.name + " makes a sound";
+    }
+
+    fn get_info() -> string {
+        return this.name + " (age " + to_string(this.age) + ")";
+    }
+}
+
+// Instantiation (function-call style)
+let pet = Animal("Milo", 3);
+println(pet.speak());     // Milo makes a sound
+println(pet.get_info());  // Milo (age 3)
+```
+
+### 15.2 Inheritance & `super`
+
+A class can inherit from another class using `: SuperClass` (or `extends SuperClass`):
+
+```fresh
+class Dog : Animal {
+    var breed: string;
+
+    constructor(name: string, age: int, breed: string) {
+        super.init(name, age);
+        this.breed = breed;
+    }
+
+    // Override parent method
+    fn speak() -> string {
+        return this.name + " says Woof!";
+    }
+
+    fn fetch(item: string) -> string {
+        return this.name + " fetches the " + item;
+    }
+}
+
+let dog = Dog("Rex", 5, "German Shepherd");
+println(dog.speak());       // Rex says Woof!
+println(dog.get_info());    // Rex (age 5) — inherited method
+println(dog.fetch("ball")); // Rex fetches the ball
+```
+
+### 15.3 Summary of OOP Syntax Features
+
+- **Field Declaration**: `var fieldName: Type;` or `var fieldName;`
+- **Constructor**: `constructor(...) { ... }` or `init(...) { ... }`
+- **Instance Reference**: `this.fieldName`, `this.methodName()`
+- **Inheritance**: `class Child : Parent { ... }` or `class Child extends Parent { ... }`
+- **Super Calls**: `super.init(...)` or `super.methodName(...)`
+
 
