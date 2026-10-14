@@ -15,7 +15,7 @@ println("Stack size: " + to_string(s.size()));
 println("Stack peek: " + to_string(s.peek()));
 println("Popped:     " + to_string(s.pop()));
 println("Popped:     " + to_string(s.pop()));
-println("Remaining:  " + to_string(s.to_array()));
+println("Remaining:  " + to_string(s.to_array())); 
 
 // 2. Queue (FIFO)
 println("\n[2] QUEUE (FIFO)");
