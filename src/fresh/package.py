@@ -105,8 +105,9 @@ class PackageManager:
         tests_dir.mkdir(exist_ok=True)
 
         # 1. Manifest: fresh.toml
+        clean_name = Path(name).name
         manifest_content = f"""[package]
-name = "{name}"
+name = "{clean_name}"
 version = "0.1.0"
 description = "A Fresh project"
 entry = "src/main.fresh"
@@ -118,7 +119,7 @@ entry = "src/main.fresh"
 
         # 2. Source: src/main.fresh
         main_content = f"""fn main() {{
-    println("Hello from {name}!");
+    println("Hello from {clean_name}!");
 }}
 
 main();
@@ -160,6 +161,12 @@ println(test_add());
             source, filename=str(entry_file)
         )
 
+        from fresh.analyzer.resolver import Resolver
+        from fresh.analyzer.type_checker import TypeChecker
+
+        Resolver(filename=str(entry_file)).resolve_program(ast)
+        TypeChecker(filename=str(entry_file)).check_program(ast)
+
         c_code = CTranspiler(filename=str(entry_file)).transpile(ast)
         c_output = out_dir / "main.c"
         c_output.write_text(c_code, encoding="utf-8")
@@ -168,7 +175,9 @@ println(test_add());
         compiler = find_c_compiler()
         if compiler:
             bin_suffix = ".exe" if sys.platform.startswith("win") else ""
-            exe_output = out_dir / f"{manifest.name}{bin_suffix}"
+            clean_name = Path(manifest.name).name
+            exe_output = out_dir / f"{clean_name}{bin_suffix}"
+            exe_output.parent.mkdir(parents=True, exist_ok=True)
             res = subprocess.run(
                 [compiler, str(c_output), "-o", str(exe_output)],
                 capture_output=True,

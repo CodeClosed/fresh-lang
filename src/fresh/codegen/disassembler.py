@@ -63,6 +63,8 @@ class Disassembler:
                 | Opcode.OP_RETURN
                 | Opcode.OP_GET_INDEX
                 | Opcode.OP_SET_INDEX
+                | Opcode.OP_INHERIT
+                | Opcode.OP_GET_THIS
             ):
                 return f"{offset_str} {line_info} {opcode.name}", offset + 1
 
@@ -98,16 +100,22 @@ class Disassembler:
                 arg_count = chunk.code[offset + 1]
                 return f"{offset_str} {line_info} {opcode.name:<16s} {arg_count:4d}", offset + 2
 
-            case Opcode.OP_STRUCT_DEF | Opcode.OP_STRUCT_NEW:
+            case Opcode.OP_STRUCT_DEF | Opcode.OP_STRUCT_NEW | Opcode.OP_CLASS_DEF:
                 name_idx = chunk.code[offset + 1]
                 fields_count = chunk.code[offset + 2]
                 name = chunk.constants[name_idx]
                 return f"{offset_str} {line_info} {opcode.name:<16s} {name} (fields: {fields_count})", offset + 3
 
-            case Opcode.OP_GET_FIELD | Opcode.OP_SET_FIELD:
+            case Opcode.OP_GET_FIELD | Opcode.OP_SET_FIELD | Opcode.OP_METHOD:
                 field_idx = chunk.code[offset + 1]
                 fname = chunk.constants[field_idx]
                 return f"{offset_str} {line_info} {opcode.name:<16s} {field_idx:4d} '{fname}'", offset + 2
+
+            case Opcode.OP_SUPER_INVOKE:
+                method_idx = chunk.code[offset + 1]
+                arg_count = chunk.code[offset + 2]
+                mname = chunk.constants[method_idx]
+                return f"{offset_str} {line_info} {opcode.name:<16s} '{mname}' (args: {arg_count})", offset + 3
 
             case Opcode.OP_CLOSURE:
                 func_idx = chunk.code[offset + 1]

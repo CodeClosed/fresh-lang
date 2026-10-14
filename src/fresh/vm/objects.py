@@ -156,3 +156,120 @@ class ObjNativeFunction(Obj):
 
     def __repr__(self) -> str:
         return f"<native fn {self.name}>"
+
+
+class ObjClass(Obj):
+    """Runtime class definition with fields, methods, and optional parent."""
+
+    def __init__(self, name: str, field_names: list[str], parent: ObjClass | None = None) -> None:
+        super().__init__()
+        self.name = name
+        self.field_names: list[str] = list(field_names)
+        self.field_indices: dict[str, int] = {fname: i for i, fname in enumerate(field_names)}
+        self.methods: dict[str, ObjClosure] = {}
+        self.parent: ObjClass | None = parent
+
+    def lookup_method(self, method_name: str) -> ObjClosure | None:
+        if method_name in self.methods:
+            return self.methods[method_name]
+        if method_name in ("init", "constructor"):
+            if "init" in self.methods:
+                return self.methods["init"]
+            if "constructor" in self.methods:
+                return self.methods["constructor"]
+        if self.parent is not None:
+            return self.parent.lookup_method(method_name)
+        return None
+
+    def inherit_from(self, parent: ObjClass) -> None:
+        self.parent = parent
+        # Inherit fields: parent fields come first
+        all_fields = list(parent.field_names)
+        for fname in self.field_names:
+            if fname not in parent.field_indices:
+                all_fields.append(fname)
+        self.field_names = all_fields
+        self.field_indices = {fname: i for i, fname in enumerate(all_fields)}
+        # Inherit methods (child methods override parent methods)
+        inherited_methods = dict(parent.methods)
+        inherited_methods.update(self.methods)
+        self.methods = inherited_methods
+
+    def trace_references(self, worklist: list[Obj]) -> None:
+        if self.parent is not None and not self.parent.is_marked:
+            self.parent.is_marked = True
+            worklist.append(self.parent)
+        for method in self.methods.values():
+            if not method.is_marked:
+                method.is_marked = True
+                worklist.append(method)
+
+    def __repr__(self) -> str:
+        return f"<class {self.name}>"
+
+
+class ObjInstance(Obj):
+    """An instance of a class."""
+
+    def __init__(self, klass: ObjClass) -> None:
+        super().__init__()
+        self.klass = klass
+        self.fields: list[Any] = [None] * len(klass.field_names)
+
+    def get_field(self, name: str) -> Any:
+        idx = self.klass.field_indices.get(name)
+        if idx is not None and idx < len(self.fields):
+            return self.fields[idx]
+        return None
+
+    def set_field(self, name: str, value: Any) -> bool:
+        idx = self.klass.field_indices.get(name)
+        if idx is not None:
+            if idx >= len(self.fields):
+                self.fields.extend([None] * (idx - len(self.fields) + 1))
+            self.fields[idx] = value
+            return True
+        else:
+            self.klass.field_names.append(name)
+            idx = len(self.klass.field_names) - 1
+            self.klass.field_indices[name] = idx
+            self.fields.extend([None] * (idx - len(self.fields) + 1))
+            self.fields[idx] = value
+            return True
+
+    def trace_references(self, worklist: list[Obj]) -> None:
+        if not self.klass.is_marked:
+            self.klass.is_marked = True
+            worklist.append(self.klass)
+        for fval in self.fields:
+            if isinstance(fval, Obj) and not fval.is_marked:
+                fval.is_marked = True
+                worklist.append(fval)
+
+    def __repr__(self) -> str:
+        fstrs = [f"{name}: {val!r}" for name, val in zip(self.klass.field_names, self.fields)]
+        return f"{self.klass.name} {{ {', '.join(fstrs)} }}"
+
+    def __str__(self) -> str:
+        fstrs = [f"{name}: {val}" for name, val in zip(self.klass.field_names, self.fields)]
+        return f"{self.klass.name} {{ {', '.join(fstrs)} }}"
+
+
+class ObjBoundMethod(Obj):
+    """A method bound to an instance (receiver)."""
+
+    def __init__(self, receiver: ObjInstance, method: ObjClosure) -> None:
+        super().__init__()
+        self.receiver = receiver
+        self.method = method
+
+    def trace_references(self, worklist: list[Obj]) -> None:
+        if not self.receiver.is_marked:
+            self.receiver.is_marked = True
+            worklist.append(self.receiver)
+        if not self.method.is_marked:
+            self.method.is_marked = True
+            worklist.append(self.method)
+
+    def __repr__(self) -> str:
+        return f"<bound method {self.method.function.name}>"

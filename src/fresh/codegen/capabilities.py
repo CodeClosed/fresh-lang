@@ -17,6 +17,7 @@ from fresh.parser.ast import (
     Expr,
     ExprStmt,
     FieldAccessExpr,
+    ClassDeclStmt,
     FieldSetExpr,
     FnDeclStmt,
     ForStmt,
@@ -28,10 +29,13 @@ from fresh.parser.ast import (
     LiteralExpr,
     LogicalExpr,
     MatchExpr,
+    PrintStmt,
     ReturnStmt,
     Stmt,
     StructDeclStmt,
     StructLiteralExpr,
+    SuperExpr,
+    ThisExpr,
     UnaryExpr,
     VarDeclStmt,
     VariableExpr,
@@ -77,6 +81,10 @@ BACKEND_CAPABILITY_MATRIX: dict[Type[Stmt | Expr], dict[str, BackendStatus]] = {
     ArrayExpr: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.RESTRICTED},
     MatchExpr: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.UNSUPPORTED},
     LambdaExpr: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.UNSUPPORTED},
+    ClassDeclStmt: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.UNSUPPORTED},
+    ThisExpr: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.UNSUPPORTED},
+    SuperExpr: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.UNSUPPORTED},
+    PrintStmt: {"vm": BackendStatus.SUPPORTED, "native_c": BackendStatus.SUPPORTED},
 }
 
 
@@ -171,3 +179,11 @@ def _check_node(node: Any, backend: str, filename: str) -> None:
     elif isinstance(node, LambdaExpr):
         for s in getattr(node, "body", []):
             _check_node(s, backend, filename)
+    elif isinstance(node, PrintStmt):
+        _check_node(node.value, backend, filename)
+    elif isinstance(node, ClassDeclStmt):
+        if node.constructor:
+            for s in node.constructor.body:
+                _check_node(s, backend, filename)
+        for m in node.methods:
+            _check_node(m, backend, filename)

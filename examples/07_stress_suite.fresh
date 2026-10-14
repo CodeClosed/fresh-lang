@@ -58,7 +58,7 @@ println("--- 2. Operators & Precedence ---");
 
 let op_test1 = 1 + 2 * 3;
 
-let op_test2 = 1 + 2 * 3;
+let op_test2 = (1 + 2) * 3;
 
 let mod_val = 10 % 3;
 

@@ -21,6 +21,8 @@ from fresh.parser.ast import (
     BlockStmt,
     BreakStmt,
     CallExpr,
+    ClassDeclStmt,
+    ConstructorDecl,
     ContinueStmt,
     Expr,
     ExprStmt,
@@ -42,6 +44,8 @@ from fresh.parser.ast import (
     StructDeclStmt,
     StructLiteralExpr,
     StructPattern,
+    SuperExpr,
+    ThisExpr,
     UnaryExpr,
     VarDeclStmt,
     VariableExpr,
@@ -62,19 +66,73 @@ class FunctionType(Enum):
     LAMBDA = auto()
 
 
+class ClassType(Enum):
+    """Tracks class nesting context for this/super validation."""
+
+    NONE = auto()
+    CLASS = auto()
+    SUBCLASS = auto()
+
+
+BUILTINS = {
+    "print",
+    "println",
+    "input",
+    "read_int",
+    "len",
+    "push",
+    "pop",
+    "clock",
+    "type",
+    "to_string",
+    "to_int",
+    "to_float",
+    "read_file",
+    "write_file",
+    "file_exists",
+    "abs",
+    "sqrt",
+    "pow",
+    "min",
+    "max",
+    "floor",
+    "ceil",
+    "round",
+}
+
+
 class Resolver:
     """AST Visitor that resolves variable declarations and scopes."""
 
     def __init__(self, filename: str = "<stdin>") -> None:
         self.filename = filename
-        self.scopes: list[dict[str, bool]] = [{}]  # Start with global scope map
+        # Global scope with standard library built-ins pre-populated
+        global_scope = {name: True for name in BUILTINS}
+        self.scopes: list[dict[str, bool]] = [global_scope]
         self.current_function: FunctionType = FunctionType.NONE
+        self.current_class: ClassType = ClassType.NONE
         self.loop_depth: int = 0
         # Map AST node id to resolved scope distance / metadata
         self.locals: dict[int, int] = {}
 
     def resolve_program(self, statements: list[Stmt]) -> None:
-        """Resolve all statements in a program."""
+        """Resolve all statements in a program with top-level declaration pre-pass."""
+        # Pass 1: Pre-declare all top-level functions and structs
+        for stmt in statements:
+            match stmt:
+                case FnDeclStmt(name=name):
+                    self._declare(name)
+                    self._define(name)
+                case StructDeclStmt(name=name):
+                    self._declare(name)
+                    self._define(name)
+                case ClassDeclStmt(name=name):
+                    self._declare(name)
+                    self._define(name)
+                case _:
+                    pass
+
+        # Pass 2: Full resolution
         for stmt in statements:
             self._resolve_stmt(stmt)
 
@@ -84,17 +142,67 @@ class Resolver:
         match stmt:
             case VarDeclStmt(name=name, initializer=init):
                 self._declare(name)
-                self._resolve_expr(init)
+                if init is not None:
+                    self._resolve_expr(init)
                 self._define(name)
 
             case FnDeclStmt(name=name, params=params, body=body):
-                self._declare(name)
-                self._define(name)
+                if len(self.scopes) > 1:
+                    self._declare(name)
+                    self._define(name)
                 self._resolve_function(params, body, FunctionType.FUNCTION)
 
-            case StructDeclStmt(name=name):
-                self._declare(name)
-                self._define(name)
+            case StructDeclStmt():
+                pass
+
+            case ClassDeclStmt(name=name, parent_name=parent, fields=fields, constructor=ctor, methods=methods):
+                enclosing_class = self.current_class
+                self.current_class = ClassType.SUBCLASS if parent is not None else ClassType.CLASS
+
+                if parent is not None:
+                    if name.lexeme == parent.lexeme:
+                        raise FreshSyntaxError(
+                            message="A class cannot inherit from itself.",
+                            line=parent.line,
+                            column=parent.column,
+                            filename=self.filename,
+                        )
+                    # Verify parent exists
+                    for i in range(len(self.scopes) - 1, -1, -1):
+                        if parent.lexeme in self.scopes[i]:
+                            break
+                    else:
+                        raise FreshNameError(
+                            message=f"Undefined class '{parent.lexeme}'.",
+                            line=parent.line,
+                            column=parent.column,
+                            filename=self.filename,
+                        )
+
+                # Class scope for 'this' and 'super'
+                self._begin_scope()
+                self.scopes[-1]["this"] = True
+                if parent is not None:
+                    self.scopes[-1]["super"] = True
+
+                if ctor is not None:
+                    if ctor.super_args is not None:
+                        if parent is None:
+                            raise FreshSyntaxError(
+                                message="Cannot call 'super' in a class with no superclass.",
+                                line=ctor.keyword.line,
+                                column=ctor.keyword.column,
+                                filename=self.filename,
+                            )
+                        for s_arg in ctor.super_args:
+                            self._resolve_expr(s_arg)
+                    self._resolve_function(ctor.params, ctor.body, FunctionType.FUNCTION)
+
+                for method in methods:
+                    self._resolve_function(method.params, method.body, FunctionType.FUNCTION)
+
+                self._end_scope()
+                self.current_class = enclosing_class
 
             case BlockStmt(statements=stmts):
                 self._begin_scope()
@@ -251,6 +359,33 @@ class Resolver:
             case LiteralExpr():
                 pass
 
+            case ThisExpr(keyword=keyword):
+                if self.current_class == ClassType.NONE:
+                    raise FreshSyntaxError(
+                        message="Cannot use 'this' outside of a class.",
+                        line=keyword.line,
+                        column=keyword.column,
+                        filename=self.filename,
+                    )
+                self._resolve_local(expr, keyword)
+
+            case SuperExpr(keyword=keyword):
+                if self.current_class == ClassType.NONE:
+                    raise FreshSyntaxError(
+                        message="Cannot use 'super' outside of a class.",
+                        line=keyword.line,
+                        column=keyword.column,
+                        filename=self.filename,
+                    )
+                elif self.current_class != ClassType.SUBCLASS:
+                    raise FreshSyntaxError(
+                        message="Cannot use 'super' in a class with no superclass.",
+                        line=keyword.line,
+                        column=keyword.column,
+                        filename=self.filename,
+                    )
+                self._resolve_local(expr, keyword)
+
     def _resolve_pattern(self, pattern: object) -> None:
         match pattern:
             case VariablePattern(name=name):
@@ -271,7 +406,9 @@ class Resolver:
         func_type: FunctionType,
     ) -> None:
         enclosing_func = self.current_function
+        enclosing_loop_depth = self.loop_depth
         self.current_function = func_type
+        self.loop_depth = 0
 
         self._begin_scope()
         for param in params:
@@ -282,6 +419,7 @@ class Resolver:
             self._resolve_stmt(stmt)
 
         self._end_scope()
+        self.loop_depth = enclosing_loop_depth
         self.current_function = enclosing_func
 
     def _begin_scope(self) -> None:
@@ -314,3 +452,10 @@ class Resolver:
                 depth = len(self.scopes) - 1 - i
                 self.locals[id(expr)] = depth
                 return
+
+        raise FreshNameError(
+            message=f"Undefined variable '{name.lexeme}'.",
+            line=name.line,
+            column=name.column,
+            filename=self.filename,
+        )

@@ -21,9 +21,12 @@ from fresh.parser.ast import (
     BlockStmt,
     BreakStmt,
     CallExpr,
+    ClassDeclStmt,
+    ConstructorDecl,
     ContinueStmt,
     Expr,
     ExprStmt,
+    PrintStmt,
     FieldAccessExpr,
     FieldSetExpr,
     FnDeclStmt,
@@ -42,6 +45,8 @@ from fresh.parser.ast import (
     StructDeclStmt,
     StructLiteralExpr,
     StructPattern,
+    SuperExpr,
+    ThisExpr,
     UnaryExpr,
     VarDeclStmt,
     VariableExpr,
@@ -60,6 +65,8 @@ class FunctionType(Enum):
     SCRIPT = auto()
     FUNCTION = auto()
     LAMBDA = auto()
+    METHOD = auto()
+    INITIALIZER = auto()
 
 
 @dataclass(slots=True)
@@ -110,8 +117,11 @@ class Compiler:
         self.loop_stack: list[LoopScope] = []
         self.current_line: int = 1
 
-        # Claim stack slot 0 for function call frame self-reference
-        self.locals.append(Local(name="", depth=0))
+        # Claim stack slot 0 for function call frame self-reference or 'this'
+        if self.func_type in (FunctionType.METHOD, FunctionType.INITIALIZER):
+            self.locals.append(Local(name="this", depth=0))
+        else:
+            self.locals.append(Local(name="", depth=0))
 
     def compile_program(self, statements: list[Stmt]) -> Chunk:
         """Compile a list of top-level statements into a Chunk."""
@@ -276,6 +286,109 @@ class Compiler:
                 self._emit_byte(name_idx)
                 self._emit_byte(struct_def_idx)
 
+            case ClassDeclStmt(name=name, parent_name=parent, fields=fields, constructor=ctor, methods=methods):
+                self.current_line = name.line
+                name_idx = self.chunk.add_constant(name.lexeme)
+                field_names = [f.name.lexeme for f in fields]
+                fields_idx = self.chunk.add_constant(field_names)
+                # If subclass, emit superclass first
+                if parent is not None:
+                    parent_const = self.chunk.add_constant(parent.lexeme)
+                    self._emit_opcode(Opcode.OP_GET_GLOBAL)
+                    self._emit_byte(parent_const)
+                # Emit class definition (creates subclass)
+                self._emit_opcode(Opcode.OP_CLASS_DEF)
+                self._emit_byte(name_idx)
+                self._emit_byte(fields_idx)
+                # If subclass, now inherit (subclass on top, superclass below)
+                if parent is not None:
+                    self._emit_opcode(Opcode.OP_INHERIT)
+
+                # Compile constructor if present
+                if ctor is not None:
+                    ctor_compiler = Compiler(
+                        filename=self.filename,
+                        func_type=FunctionType.INITIALIZER,
+                        func_name=f"{name.lexeme}.constructor",
+                        enclosing=self,
+                    )
+                    for p in ctor.params:
+                        ctor_compiler.locals.append(Local(name=p.name.lexeme, depth=ctor_compiler.scope_depth))
+
+                    if ctor.super_args is not None:
+                        ctor_compiler._emit_opcode(Opcode.OP_GET_THIS)
+                        for s_arg in ctor.super_args:
+                            ctor_compiler._compile_expr(s_arg)
+                        s_idx = ctor_compiler.chunk.add_constant("constructor")
+                        ctor_compiler._emit_opcode(Opcode.OP_SUPER_INVOKE)
+                        ctor_compiler._emit_byte(s_idx)
+                        ctor_compiler._emit_byte(len(ctor.super_args))
+                        ctor_compiler._emit_opcode(Opcode.OP_POP)
+
+                    for s in ctor.body:
+                        ctor_compiler._compile_stmt(s)
+
+                    ctor_compiler._emit_opcode(Opcode.OP_GET_THIS)
+                    ctor_compiler._emit_opcode(Opcode.OP_RETURN)
+
+                    ctor_obj = CompiledFunction(
+                        name="constructor",
+                        arity=len(ctor.params),
+                        chunk=ctor_compiler.chunk,
+                        upvalue_count=len(ctor_compiler.upvalues),
+                    )
+                    ctor_idx = self.chunk.add_constant(ctor_obj)
+                    self._emit_opcode(Opcode.OP_CLOSURE)
+                    self._emit_byte(ctor_idx)
+                    for upval in ctor_compiler.upvalues:
+                        self._emit_byte(1 if upval.is_local else 0)
+                        self._emit_byte(upval.index)
+
+                    method_name_idx = self.chunk.add_constant("constructor")
+                    self._emit_opcode(Opcode.OP_METHOD)
+                    self._emit_byte(method_name_idx)
+
+                # Compile methods
+                for method in methods:
+                    method_compiler = Compiler(
+                        filename=self.filename,
+                        func_type=FunctionType.METHOD,
+                        func_name=f"{name.lexeme}.{method.name.lexeme}",
+                        enclosing=self,
+                    )
+                    for p in method.params:
+                        method_compiler.locals.append(Local(name=p.name.lexeme, depth=method_compiler.scope_depth))
+
+                    for s in method.body:
+                        method_compiler._compile_stmt(s)
+
+                    method_compiler._emit_opcode(Opcode.OP_NIL)
+                    method_compiler._emit_opcode(Opcode.OP_RETURN)
+
+                    method_obj = CompiledFunction(
+                        name=method.name.lexeme,
+                        arity=len(method.params),
+                        chunk=method_compiler.chunk,
+                        upvalue_count=len(method_compiler.upvalues),
+                    )
+                    method_idx = self.chunk.add_constant(method_obj)
+                    self._emit_opcode(Opcode.OP_CLOSURE)
+                    self._emit_byte(method_idx)
+                    for upval in method_compiler.upvalues:
+                        self._emit_byte(1 if upval.is_local else 0)
+                        self._emit_byte(upval.index)
+
+                    m_name_idx = self.chunk.add_constant(method.name.lexeme)
+                    self._emit_opcode(Opcode.OP_METHOD)
+                    self._emit_byte(m_name_idx)
+
+                # Define the class in global/local scope
+                if self.scope_depth > 0:
+                    self.locals.append(Local(name=name.lexeme, depth=self.scope_depth))
+                else:
+                    self._emit_opcode(Opcode.OP_DEFINE_GLOBAL)
+                    self._emit_byte(name_idx)
+
             case BlockStmt(statements=stmts):
                 self._begin_scope()
                 for s in stmts:
@@ -285,6 +398,11 @@ class Compiler:
             case ExprStmt(expression=expr):
                 self._compile_expr(expr)
                 self._emit_opcode(Opcode.OP_POP)
+
+            case PrintStmt(keyword=kw, value=val):
+                self.current_line = kw.line
+                self._compile_expr(val)
+                self._emit_opcode(Opcode.OP_PRINT)
 
             case IfStmt(keyword=kw, condition=cond, then_branch=then_b, else_branch=else_b):
                 self.current_line = kw.line
@@ -478,14 +596,39 @@ class Compiler:
 
             case CallExpr(callee=callee, paren=paren, arguments=args):
                 self.current_line = paren.line
-                self._compile_expr(callee)
-                for arg in args:
-                    self._compile_expr(arg)
-                self._emit_opcode(Opcode.OP_CALL)
-                self._emit_byte(len(args))
+                if len(args) > 255:
+                    raise FreshSyntaxError(
+                        message="Cannot have more than 255 arguments in function call.",
+                        line=paren.line,
+                        column=paren.column,
+                        filename=self.filename,
+                    )
+                if isinstance(callee, SuperExpr):
+                    self._emit_opcode(Opcode.OP_GET_THIS)
+                    for arg in args:
+                        self._compile_expr(arg)
+                    # Translate constructor name 'init' to internal method name 'constructor'
+                    method_name = "constructor" if callee.method.lexeme == "init" else callee.method.lexeme
+                    method_idx = self.chunk.add_constant(method_name)
+                    self._emit_opcode(Opcode.OP_SUPER_INVOKE)
+                    self._emit_byte(method_idx)
+                    self._emit_byte(len(args))
+                else:
+                    self._compile_expr(callee)
+                    for arg in args:
+                        self._compile_expr(arg)
+                    self._emit_opcode(Opcode.OP_CALL)
+                    self._emit_byte(len(args))
 
             case ArrayExpr(bracket=bracket, elements=elems):
                 self.current_line = bracket.line
+                if len(elems) > 255:
+                    raise FreshSyntaxError(
+                        message="Cannot have more than 255 elements in array literal.",
+                        line=bracket.line,
+                        column=bracket.column,
+                        filename=self.filename,
+                    )
                 for elem in elems:
                     self._compile_expr(elem)
                 self._emit_opcode(Opcode.OP_BUILD_ARRAY)
@@ -527,6 +670,20 @@ class Compiler:
                 self._emit_opcode(Opcode.OP_STRUCT_NEW)
                 self._emit_byte(struct_name_idx)
                 self._emit_byte(len(fields))
+
+            case ThisExpr(keyword=kw):
+                self.current_line = kw.line
+                self._emit_opcode(Opcode.OP_GET_THIS)
+
+            case SuperExpr(keyword=kw, method=method):
+                self.current_line = kw.line
+                self._emit_opcode(Opcode.OP_GET_THIS)
+                # Translate constructor name 'init' to internal method name 'constructor'
+                method_name = "constructor" if method.lexeme == "init" else method.lexeme
+                method_idx = self.chunk.add_constant(method_name)
+                self._emit_opcode(Opcode.OP_SUPER_INVOKE)
+                self._emit_byte(method_idx)
+                self._emit_byte(0)
 
             case MatchExpr(keyword=kw, scrutinee=scr, arms=arms):
                 self.current_line = kw.line

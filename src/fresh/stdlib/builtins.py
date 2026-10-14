@@ -27,8 +27,9 @@ def register_builtins(vm: VM) -> None:
         print(out)
         return None
 
-    def _native_input(prompt: Any = "") -> str:
-        return input(value_to_string(prompt))
+    def _native_input(*args: Any) -> str:
+        prompt = value_to_string(args[0]) if args else ""
+        return input(prompt)
 
     def _native_read_int() -> int:
         raw = input()
@@ -81,10 +82,16 @@ def register_builtins(vm: VM) -> None:
         return value_to_string(val)
 
     def _native_to_int(val: Any) -> int:
-        return int(val)
+        try:
+            return int(val)
+        except (ValueError, TypeError) as e:
+            raise FreshRuntimeError(f"to_int() failed on value '{val}': {e}")
 
     def _native_to_float(val: Any) -> float:
-        return float(val)
+        try:
+            return float(val)
+        except (ValueError, TypeError) as e:
+            raise FreshRuntimeError(f"to_float() failed on value '{val}': {e}")
 
     def _native_read_file(path_str: Any) -> str:
         p = str(path_str)
@@ -107,7 +114,7 @@ def register_builtins(vm: VM) -> None:
     natives = [
         ("print", -1, _native_print),
         ("println", -1, _native_println),
-        ("input", 0, _native_input),
+        ("input", -1, _native_input),
         ("read_int", 0, _native_read_int),
         ("len", 1, _native_len),
         ("push", 2, _native_push),

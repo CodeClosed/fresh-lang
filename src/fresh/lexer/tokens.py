@@ -58,6 +58,7 @@ class TokenType(IntEnum):
 
     # ── Keywords ──────────────────────────────────────────────
     LET = auto()            # let
+    VAR = auto()            # var
     FN = auto()             # fn
     RETURN = auto()         # return
     IF = auto()             # if
@@ -66,10 +67,16 @@ class TokenType(IntEnum):
     FOR = auto()            # for
     BREAK = auto()          # break
     CONTINUE = auto()       # continue
+    PRINT = auto()          # print
     STRUCT = auto()         # struct
     MATCH = auto()          # match
     NIL = auto()            # nil
     IMPORT = auto()         # import
+    CLASS = auto()          # class
+    CONSTRUCTOR = auto()    # constructor
+    THIS = auto()           # this
+    SUPER = auto()          # super
+    EXTENDS = auto()        # extends
 
     # ── Type keywords ─────────────────────────────────────────
     INT_TYPE = auto()       # int
@@ -85,7 +92,8 @@ class TokenType(IntEnum):
 # ── Keyword lookup table ──────────────────────────────────────
 KEYWORDS: dict[str, TokenType] = {
     "let":      TokenType.LET,
-    "fn":       TokenType.FN,
+    "var":      TokenType.VAR,
+    "init":      TokenType.CONSTRUCTOR,
     "return":   TokenType.RETURN,
     "if":       TokenType.IF,
     "else":     TokenType.ELSE,
@@ -93,17 +101,25 @@ KEYWORDS: dict[str, TokenType] = {
     "for":      TokenType.FOR,
     "break":    TokenType.BREAK,
     "continue": TokenType.CONTINUE,
-    "struct":   TokenType.STRUCT,
-    "match":    TokenType.MATCH,
-    "import":   TokenType.IMPORT,
-    "true":     TokenType.TRUE,
-    "false":    TokenType.FALSE,
-    "nil":      TokenType.NIL,
-    "int":      TokenType.INT_TYPE,
-    "float":    TokenType.FLOAT_TYPE,
-    "bool":     TokenType.BOOL_TYPE,
-    "string":   TokenType.STRING_TYPE,
+    "print":    TokenType.PRINT,
+    "struct":      TokenType.STRUCT,
+    "match":       TokenType.MATCH,
+    "import":      TokenType.IMPORT,
+    "class":       TokenType.CLASS,
+    "constructor": TokenType.CONSTRUCTOR,
+    "this":        TokenType.THIS,
+    "super":       TokenType.SUPER,
+    "extends":     TokenType.EXTENDS,
+    "fn":          TokenType.FN,
+    "true":        TokenType.TRUE,
+    "false":       TokenType.FALSE,
+    "nil":         TokenType.NIL,
+    "int":         TokenType.INT_TYPE,
+    "float":       TokenType.FLOAT_TYPE,
+    "bool":        TokenType.BOOL_TYPE,
+    "string":      TokenType.STRING_TYPE,
 }
+
 
 
 

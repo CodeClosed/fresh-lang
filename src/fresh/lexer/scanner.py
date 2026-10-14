@@ -178,9 +178,19 @@ class Scanner:
         value_chars: list[str] = []
 
         while not self._is_at_end() and self._peek() != '"':
+            if self._peek() == "\r":
+                self._advance()
+                if self._peek() == "\n":
+                    self._advance()
+                    self._newline()
+                    value_chars.append("\n")
+                else:
+                    value_chars.append("\r")
+                continue
+
             if self._peek() == "\n":
+                self._advance()
                 self._newline()
-                self._current += 1
                 value_chars.append("\n")
                 continue
 
@@ -339,7 +349,7 @@ class Scanner:
     def _newline(self) -> None:
         """Track a newline: increment line counter, reset column."""
         self._line += 1
-        self._column = 0  # Will be incremented to 1 by next _advance()
+        self._column = 1
 
     # ── Token construction ────────────────────────────────────
 

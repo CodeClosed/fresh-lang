@@ -195,6 +195,21 @@ class StructLiteralExpr(Expr):
 
 
 @dataclass(slots=True)
+class ThisExpr(Expr):
+    """The 'this' keyword inside a class method or constructor."""
+
+    keyword: "Token"
+
+
+@dataclass(slots=True)
+class SuperExpr(Expr):
+    """Super method access: super.method_name."""
+
+    keyword: "Token"
+    method: "Token"  # the method name after super.
+
+
+@dataclass(slots=True)
 class MatchExpr(Expr):
     """Match expression: match scrutinee { pattern => body, ... }."""
 
@@ -224,6 +239,14 @@ class ExprStmt(Stmt):
 
 
 @dataclass(slots=True)
+class PrintStmt(Stmt):
+    """Print statement: print expr;"""
+
+    keyword: "Token"
+    value: Expr
+
+
+@dataclass(slots=True)
 class VarDeclStmt(Stmt):
     """Variable declaration: let name [: type] = expr;"""
 
@@ -248,6 +271,27 @@ class StructDeclStmt(Stmt):
 
     name: "Token"
     fields: list[StructField]
+
+
+@dataclass(slots=True)
+class ConstructorDecl:
+    """Constructor declaration inside a class."""
+
+    keyword: "Token"
+    params: list[Parameter]
+    body: list[Stmt]
+    super_args: list[Expr] | None = None  # super(args) call in body
+
+
+@dataclass(slots=True)
+class ClassDeclStmt(Stmt):
+    """Class declaration: class Name [: Parent] { fields, constructor, methods }."""
+
+    name: "Token"
+    parent_name: "Token | None"
+    fields: list[StructField]
+    constructor: ConstructorDecl | None
+    methods: list[FnDeclStmt]
 
 
 @dataclass(slots=True)
@@ -408,6 +452,28 @@ class ASTPrinter:
                 )
                 return f"{pad}StructDecl {name.lexeme} {{ {flds} }}"
 
+            case ClassDeclStmt(name=name, parent_name=parent, fields=fields, constructor=ctor, methods=methods):
+                parent_str = f" : {parent.lexeme}" if parent else ""
+                header = f"{pad}ClassDecl {name.lexeme}{parent_str}"
+                parts = [header]
+                if fields:
+                    flds = ", ".join(
+                        f"{f.name.lexeme}: {self._type(f.type_annotation)}"
+                        for f in fields
+                    )
+                    parts.append(f"{pad}  Fields: {flds}")
+                if ctor:
+                    ctor_params = ", ".join(
+                        f"{p.name.lexeme}: {self._type(p.type_annotation)}"
+                        for p in ctor.params
+                    )
+                    parts.append(f"{pad}  Constructor({ctor_params})")
+                    for s in ctor.body:
+                        parts.append(self._stmt(s, indent + 2))
+                for m in methods:
+                    parts.append(self._stmt(m, indent + 1))
+                return "\n".join(parts)
+
             case IfStmt(condition=cond, then_branch=then_b, else_branch=else_b):
                 result = f"{pad}If ({self._expr(cond)})\n"
                 result += "\n".join(self._stmt(s, indent + 1) for s in then_b)
@@ -445,6 +511,9 @@ class ASTPrinter:
 
             case ExprStmt(expression=expr):
                 return f"{pad}ExprStmt {self._expr(expr)}"
+
+            case PrintStmt(value=val):
+                return f"{pad}Print {self._expr(val)}"
 
             case ImportStmt(module_token=mod_tok):
                 return f"{pad}Import {mod_tok.lexeme}"
@@ -500,6 +569,12 @@ class ASTPrinter:
                 )
                 return f"{name.lexeme} {{ {flds} }}"
 
+            case ThisExpr():
+                return "this"
+
+            case SuperExpr(method=method):
+                return f"super.{method.lexeme}"
+
             case MatchExpr(scrutinee=scr, arms=arms):
                 arm_strs: list[str] = []
                 for a in arms:
@@ -541,7 +616,9 @@ class ASTPrinter:
 
     # ── Type Formatting ───────────────────────────────────────
 
-    def _type(self, ta: TypeAnnotation) -> str:
+    def _type(self, ta: TypeAnnotation | None) -> str:
+        if ta is None:
+            return "any"
         if ta.element_type is not None:
             return f"[{self._type(ta.element_type)}]"
         return ta.name.lexeme

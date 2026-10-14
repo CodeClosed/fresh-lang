@@ -75,8 +75,8 @@ def main() -> None:
     try:
         if args.command == "run":
             file_path = Path(args.file)
-            if not file_path.exists():
-                print(f"Error: File '{args.file}' not found.", file=sys.stderr)
+            if not file_path.exists() or not file_path.is_file():
+                print(f"Error: File '{args.file}' not found or is not a regular file.", file=sys.stderr)
                 sys.exit(EXIT_USER_ERROR)
 
             source = file_path.read_text(encoding="utf-8")
@@ -87,6 +87,8 @@ def main() -> None:
                 ast = ModuleLoader(base_dir=file_path.parent).load_program_with_imports(
                     source, filename=str(file_path)
                 )
+                Resolver(filename=str(file_path)).resolve_program(ast)
+                TypeChecker(filename=str(file_path)).check_program(ast)
                 c_code = CTranspiler(filename=str(file_path)).transpile(ast)
                 print(c_code)
                 sys.exit(EXIT_SUCCESS)
@@ -102,8 +104,8 @@ def main() -> None:
 
         elif args.command == "check":
             file_path = Path(args.file)
-            if not file_path.exists():
-                print(f"Error: File '{args.file}' not found.", file=sys.stderr)
+            if not file_path.exists() or not file_path.is_file():
+                print(f"Error: File '{args.file}' not found or is not a regular file.", file=sys.stderr)
                 sys.exit(EXIT_USER_ERROR)
 
             source = file_path.read_text(encoding="utf-8")
@@ -119,8 +121,8 @@ def main() -> None:
 
         elif args.command == "fmt":
             file_path = Path(args.file)
-            if not file_path.exists():
-                print(f"Error: File '{args.file}' not found.", file=sys.stderr)
+            if not file_path.exists() or not file_path.is_file():
+                print(f"Error: File '{args.file}' not found or is not a regular file.", file=sys.stderr)
                 sys.exit(EXIT_USER_ERROR)
 
             source = file_path.read_text(encoding="utf-8")

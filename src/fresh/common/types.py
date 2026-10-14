@@ -133,6 +133,67 @@ class FreshStruct(FreshType):
         return hash(("struct", self.name))
 
 
+@dataclass
+class FreshClass(FreshType):
+    """Class type with fields, methods, and optional parent for inheritance."""
+
+    name: str = ""
+    fields: dict[str, FreshType] = field(default_factory=dict)
+    methods: dict[str, "FreshFunction"] = field(default_factory=dict)
+    parent: "FreshClass | None" = None
+
+    def __repr__(self) -> str:
+        return self.name
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, FreshAny):
+            return True
+        return isinstance(other, FreshClass) and self.name == other.name
+
+    def __hash__(self) -> int:
+        return hash(("class", self.name))
+
+    def lookup_method(self, method_name: str) -> "FreshFunction | None":
+        """Walk the inheritance chain to find a method."""
+        if method_name in self.methods:
+            return self.methods[method_name]
+        if method_name in ("init", "constructor"):
+            if "init" in self.methods:
+                return self.methods["init"]
+            if "constructor" in self.methods:
+                return self.methods["constructor"]
+        if self.parent is not None:
+            return self.parent.lookup_method(method_name)
+        return None
+
+    def lookup_field(self, field_name: str) -> "FreshType | None":
+        """Walk the inheritance chain to find a field type."""
+        if field_name in self.fields:
+            return self.fields[field_name]
+        if self.parent is not None:
+            return self.parent.lookup_field(field_name)
+        return None
+
+    def all_fields(self) -> dict[str, FreshType]:
+        """Return all fields including inherited ones (parent fields first)."""
+        if self.parent is not None:
+            result = self.parent.all_fields()
+        else:
+            result = {}
+        result.update(self.fields)
+        return result
+
+    def is_subclass_of(self, other: "FreshClass") -> bool:
+        """Check if this class is a subclass of another."""
+        if self.name == other.name:
+            return True
+        if self.parent is not None:
+            return self.parent.is_subclass_of(other)
+        return False
+
+
+
+
 class FreshAny(FreshType):
     """Wildcard type that matches anything. Used during inference."""
 

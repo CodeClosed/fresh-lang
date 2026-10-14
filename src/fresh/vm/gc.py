@@ -51,9 +51,13 @@ class GarbageCollector:
             if isinstance(val, Obj):
                 self._mark_object(val, worklist)
 
-        # CallFrame roots (closures)
+        # CallFrame roots (closures and constants)
         for frame in self.vm.frames:
             self._mark_object(frame.closure, worklist)
+            if frame.closure and frame.closure.function and frame.closure.function.chunk:
+                for constant in frame.closure.function.chunk.constants:
+                    if isinstance(constant, Obj):
+                        self._mark_object(constant, worklist)
 
         # Globals roots
         for val in self.vm.globals.values():
@@ -63,6 +67,11 @@ class GarbageCollector:
         # Open Upvalues roots
         for upval in self.vm.open_upvalues:
             self._mark_object(upval, worklist)
+
+        # Temp roots on VM if registered
+        for troot in getattr(self.vm, "temp_roots", []):
+            if isinstance(troot, Obj):
+                self._mark_object(troot, worklist)
 
         # ── Phase 2: Transitive Blackening ────────────────────
         while worklist:

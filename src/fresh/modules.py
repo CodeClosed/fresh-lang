@@ -6,6 +6,7 @@ and circular dependency detection [E4001].
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 from fresh.common.errors import FreshSyntaxError
@@ -41,11 +42,11 @@ class ModuleLoader:
                 mod_name = str(stmt.module_token.value or stmt.module_token.lexeme)
                 imported_path = self._resolve_module_path(mod_name, filename)
 
-                canonical_path = str(imported_path.resolve())
+                canonical_path = str(imported_path.resolve()).lower() if sys.platform.startswith("win") else str(imported_path.resolve())
 
                 # Check for circular dependency
-                if canonical_path in import_chain:
-                    cycle_repr = " -> ".join(import_chain + [canonical_path])
+                if canonical_path in [p.lower() if sys.platform.startswith("win") else p for p in import_chain]:
+                    cycle_repr = " -> ".join(import_chain + [str(imported_path)])
                     raise FreshSyntaxError(
                         message=f"[E4001] Circular module dependency detected: {cycle_repr}",
                         line=stmt.keyword.line,

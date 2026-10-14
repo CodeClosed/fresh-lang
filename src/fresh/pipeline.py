@@ -41,11 +41,10 @@ def run_source(
     Returns:
         Result of evaluation.
     """
-    # ── Phase 1: Lexical Analysis ─────────────────────────────
-    scanner = Scanner(source, filename)
-    tokens = scanner.scan_tokens()
-
+    # ── Phase 1: Lexical Analysis (Optional Token Dump) ──────
     if dump_tokens:
+        scanner = Scanner(source, filename)
+        tokens = scanner.scan_tokens()
         print(f"=== TOKENS ({filename}) ===")
         for tok in tokens:
             print(f"  {tok}")

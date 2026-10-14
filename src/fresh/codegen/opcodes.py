@@ -69,3 +69,11 @@ class Opcode(IntEnum):
     # ── Pattern Matching & Runtime Errors ─────────────────────
     OP_MATCH_PATTERN = auto()  # Check pattern equality / shape
     OP_PANIC = auto()          # [msg_idx] -> raise runtime error
+
+    # ── Classes & OOP ─────────────────────────────────────────
+    OP_CLASS_DEF = auto()      # [name_idx, field_count] -> create ObjClass
+    OP_METHOD = auto()         # [name_idx] -> bind method to class at TOS
+    OP_INHERIT = auto()        # [subclass, superclass] -> copy superclass methods to subclass
+    OP_GET_THIS = auto()       # -> push this (stack[frame.stack_base])
+    OP_SUPER_INVOKE = auto()   # [method_name_idx, arg_count] -> invoke method on superclass
+    OP_PRINT = auto()       # [value] -> print(value) and push nil

@@ -9,6 +9,19 @@ description = "Fresh Programming Language - Compiler & Bytecode VM"
 readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11"
+authors = [
+    { name = "Vihaan" }
+]
+keywords = [
+    "compiler",
+    "programming-language",
+    "bytecode-vm",
+    "interpreter",
+    "transpiler",
+    "fresh",
+    "type-checker",
+    "garbage-collection"
+]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -21,6 +34,11 @@ classifiers = [
     "Topic :: Software Development :: Compilers",
     "Topic :: Software Development :: Interpreters",
 ]
+
+[project.urls]
+Homepage = "https://github.com/CodeClosed/fresh-lang"
+Repository = "https://github.com/CodeClosed/fresh-lang.git"
+Issues = "https://github.com/CodeClosed/fresh-lang/issues"
 
 [project.scripts]
 fresh = "fresh.cli:main"

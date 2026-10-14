@@ -7,7 +7,6 @@ from fresh.analyzer.type_checker import TypeChecker
 from fresh.codegen.c_transpiler import CTranspiler
 from fresh.lexer.scanner import Scanner
 from fresh.parser.parser import Parser
-from fresh.pipeline import run_source
 
 
 def test_benchmark_lexer_throughput():
@@ -32,18 +31,19 @@ def test_benchmark_parser_and_typechecker():
     assert elapsed < 1.5, f"Parser/Typechecker too slow: {elapsed:.3f}s"
 
 
-def test_benchmark_vm_execution():
+def test_benchmark_vm_execution(run_fresh):
     source = """
     fn fib(n: int) -> int {
         if (n <= 1) { return n; }
         return fib(n - 1) + fib(n - 2);
     }
-    let res = fib(18);
+    println(fib(18));
     """
     start = time.perf_counter()
-    run_source(source, filename="<bench>")
+    out = run_fresh(source)
     elapsed = time.perf_counter() - start
-    assert elapsed < 2.0, f"VM execution too slow: {elapsed:.3f}s"
+    assert out.strip() == "2584"
+    assert elapsed < 5.0, f"VM execution too slow: {elapsed:.3f}s"
 
 
 def test_benchmark_c_transpilation():

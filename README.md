@@ -1,259 +1,696 @@
-# ⚡ The Fresh Programming Language
+# 🍃 Fresh
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/CodeClosed/fresh-lang/main/vscode-extension/icon.png" width="100" height="100" alt="Fresh Logo" />
-</p>
+### A modern, lightweight programming language built from scratch
 
-<p align="center">
-  <b>A modern, statically-typed compiled language featuring a Pratt parser, optimizing bytecode compiler, stack-based Virtual Machine with mark-and-sweep GC, native C transpilation, closures, pattern matching, and developer tooling.</b>
-</p>
+**Fresh** is a programming language and compiler project designed with a simple, readable syntax while providing the foundations of a complete compiled language.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11%20%7C%203.12%20%7C%203.13%20%7C%203.14-blue?logo=python" alt="Python Versions" />
-  <img src="https://img.shields.io/badge/Tests-93%20Passing-brightgreen?logo=pytest" alt="Test Status" />
-  <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
-  <img src="https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey" alt="Platforms" />
-</p>
+The project includes its own **lexer, parser, AST, semantic analysis, type checker, bytecode compiler, virtual machine, formatter, and C transpiler**.
 
 ---
 
-## 📑 Table of Contents
+## 🚀 Project Status
 
-- [🚀 Quickstart in 30 Seconds](#-quickstart-in-30-seconds)
-- [🌟 Key Highlights & Language Design](#-key-highlights--language-design)
-- [🏗 Architecture & Compiler Pipeline](#-architecture--compiler-pipeline)
-- [💻 Command-Line Interface (CLI)](#-command-line-interface-cli)
-- [🛠 VS Code Integration & 1-Click Execution](#-vs-code-integration--1-click-execution)
-- [🧩 Feature Showcase & Code Examples](#-feature-showcase--code-examples)
-- [📂 Project Directory Structure](#-project-directory-structure)
-- [📚 Documentation Index](#-documentation-index)
-- [🧪 Running the Test Suite](#-running-the-test-suite)
-- [📄 License](#-license)
+Fresh currently supports several core language features, including:
+
+- Variables and expressions
+- Functions
+- Structs
+- Type checking
+- Bytecode compilation
+- Virtual machine execution
+- C transpilation
+- Code formatting
+- AST generation
+- Bytecode disassembly
+
+### 🆕 Object-Oriented Programming
+
+Fresh is being extended with **C++/Java-style Object-Oriented Programming**.
+
+The OOP system introduces:
+
+- Classes
+- Fields
+- Methods
+- Constructors
+- `this`
+- Single inheritance
+- `super`
+- Method overriding
+- Class instances
+- Inherited methods
+
+Existing `struct` declarations remain fully supported and unchanged.
 
 ---
 
-## 🚀 Quickstart in 30 Seconds
+# ✨ OOP Syntax
 
-### 1. Installation
-Clone the repository and install dependencies:
+Fresh uses a clean class syntax inspired by C++ and Java.
 
-```bash
-git clone https://github.com/CodeClosed/fresh-lang.git
-cd fresh-lang
-python -m pip install -e .
-```
-
-### 2. Write Your First Fresh Program
-Create a file named `hello.fresh`:
+## 🐾 Basic Class
 
 ```fresh
-// hello.fresh
-fn greet(name: string) -> string {
-    return "Hello, " + name + "! Welcome to Fresh ⚡";
+class Animal {
+    name: string,
+    age: int
+
+    constructor(name: string, age: int) {
+        this.name = name;
+        this.age = age;
+    }
+
+    fn speak() -> string {
+        return this.name + " makes a sound";
+    }
+
+    fn get_info() -> string {
+        return this.name + " (age " + to_string(this.age) + ")";
+    }
+}
+```
+
+---
+
+## 🐕 Inheritance
+
+Fresh supports **single inheritance** using `:`.
+
+```fresh
+class Dog : Animal {
+    breed: string
+
+    constructor(name: string, age: int, breed: string) {
+        super(name, age);
+        this.breed = breed;
+    }
+
+    fn speak() -> string {
+        return this.name + " says Woof!";
+    }
+
+    fn fetch(item: string) -> string {
+        return this.name + " fetches " + item;
+    }
+}
+```
+
+---
+
+## ▶️ Using Classes
+
+Classes can be instantiated using the existing function-call style:
+
+```fresh
+let dog = Dog("Rex", 5, "German Shepherd");
+
+println(dog.speak());
+println(dog.get_info());
+println(dog.fetch("ball"));
+```
+
+Output:
+
+```text
+Rex says Woof!
+Rex (age 5)
+Rex fetches ball
+```
+
+The derived `Dog` class overrides `speak()` while still inheriting `get_info()` from `Animal`.
+
+---
+
+# 🧩 OOP Design
+
+The proposed OOP system follows these design decisions:
+
+| Feature            | Fresh Syntax                        |
+| ------------------ | ----------------------------------- |
+| Class              | `class Animal { ... }`              |
+| Field              | `name: string`                      |
+| Method             | `fn speak() -> string { ... }`      |
+| Constructor        | `constructor(...) { ... }`          |
+| Instance access    | `this.name`                         |
+| Inheritance        | `class Dog : Animal`                |
+| Parent constructor | `super(name, age)`                  |
+| Method overriding  | Define the same method in the child |
+| Object creation    | `Dog(...)`                          |
+
+The syntax intentionally stays consistent with Fresh's existing style while introducing familiar object-oriented concepts.
+
+---
+
+# 🏗️ Compiler Architecture
+
+Adding OOP affects every major stage of the Fresh compiler pipeline.
+
+```text
+                 Fresh Source Code
+                        │
+                        ▼
+                  ┌───────────┐
+                  │   Lexer   │
+                  └─────┬─────┘
+                        │
+                        ▼
+                  ┌───────────┐
+                  │   Parser  │
+                  └─────┬─────┘
+                        │
+                        ▼
+                     AST
+                        │
+             ┌──────────┴──────────┐
+             ▼                     ▼
+       Semantic Analysis       Type Checker
+             │                     │
+             └──────────┬──────────┘
+                        ▼
+                Bytecode Compiler
+                        │
+                        ▼
+                   Bytecode
+                        │
+                        ▼
+                Virtual Machine
+                        │
+                        ▼
+                    Program
+```
+
+---
+
+# 🔧 Implementation Plan
+
+## 1. Lexer
+
+### `tokens.py`
+
+Add the following keyword tokens:
+
+```text
+CLASS
+CONSTRUCTOR
+THIS
+SUPER
+```
+
+They are also added to the `KEYWORDS` lookup table.
+
+### `scanner.py`
+
+No major changes are required because the existing keyword scanning mechanism automatically recognizes the new keywords.
+
+---
+
+# 🧱 Type System
+
+### `types.py`
+
+Introduce a new `FreshClass` type containing:
+
+```python
+@dataclass
+class FreshClass(FreshType):
+    name: str = ""
+    fields: dict[str, FreshType] = field(default_factory=dict)
+    methods: dict[str, FreshFunction] = field(default_factory=dict)
+    parent: FreshClass | None = None
+```
+
+The `parent` reference allows field and method lookup to walk through the inheritance chain.
+
+---
+
+# 🌳 AST
+
+The following AST nodes are introduced:
+
+### `ClassDeclStmt`
+
+Represents a class declaration.
+
+### `ThisExpr`
+
+Represents the `this` keyword inside a class.
+
+### `SuperExpr`
+
+Represents access to the parent class.
+
+### `ConstructorDecl`
+
+Represents a class constructor.
+
+Example structure:
+
+```python
+@dataclass(slots=True)
+class ConstructorDecl:
+    keyword: Token
+    params: list[Parameter]
+    body: list[Stmt]
+    super_args: list[Expr] | None = None
+```
+
+The AST printer is also updated to display the new OOP nodes.
+
+---
+
+# 🧠 Parser
+
+### `parser.py`
+
+The parser will recognize:
+
+```fresh
+class Animal {
+    ...
+}
+```
+
+and route class declarations through:
+
+```text
+_declaration()
+    └── _class_declaration()
+```
+
+The parser also adds support for:
+
+```fresh
+this.name
+```
+
+and:
+
+```fresh
+super.speak()
+```
+
+as well as:
+
+```fresh
+super(name, age)
+```
+
+inside constructors.
+
+---
+
+# 🔍 Semantic Analysis
+
+### `resolver.py`
+
+The resolver will:
+
+- Pre-declare class names
+- Create a class scope
+- Declare `this`
+- Resolve constructors
+- Resolve methods
+- Track the current class context
+- Validate `this`
+- Validate `super`
+- Prevent class-only features from being used outside classes
+
+For example:
+
+```fresh
+this.name
+```
+
+is only valid within a class method or constructor.
+
+---
+
+# 🧪 Type Checking
+
+### `type_checker.py`
+
+The type checker will:
+
+- Register class types
+- Check field types
+- Check method signatures
+- Check constructor parameters
+- Validate return types
+- Resolve `this`
+- Resolve `super`
+- Validate inherited methods
+- Check method calls
+- Support derived-to-parent type compatibility
+
+For example:
+
+```fresh
+class Dog : Animal {
+    ...
+}
+```
+
+allows a `Dog` instance to be used where an `Animal` is expected.
+
+---
+
+# ⚙️ Bytecode
+
+New bytecode operations are introduced for class support:
+
+| Opcode            | Purpose                     |
+| ----------------- | --------------------------- |
+| `OP_CLASS_DEF`    | Define a class              |
+| `OP_METHOD`       | Attach a method to a class  |
+| `OP_INHERIT`      | Establish inheritance       |
+| `OP_GET_THIS`     | Access the current instance |
+| `OP_SUPER_INVOKE` | Invoke a superclass method  |
+
+These operations allow the VM to efficiently represent classes and method calls.
+
+---
+
+# 🖥️ Virtual Machine
+
+### `objects.py`
+
+Fresh introduces runtime objects for classes and instances:
+
+```text
+ObjClass
+ObjInstance
+```
+
+`ObjClass` contains:
+
+- Class name
+- Fields
+- Methods
+- Parent class
+
+`ObjInstance` contains:
+
+- Reference to its class
+- Instance field values
+
+---
+
+## Method Lookup
+
+When executing:
+
+```fresh
+dog.speak()
+```
+
+the VM searches the object's class for `speak()`.
+
+If the method is not found directly on the class, inherited methods can be resolved through the parent class.
+
+This allows:
+
+```fresh
+dog.get_info()
+```
+
+to call a method inherited from `Animal`.
+
+---
+
+# 🔄 Method Overriding
+
+A child class can define a method with the same name as its parent:
+
+```fresh
+class Animal {
+    fn speak() -> string {
+        return "Animal sound";
+    }
 }
 
-let message = greet("Developer");
-println(message);
+class Dog : Animal {
+    fn speak() -> string {
+        return "Woof!";
+    }
+}
 ```
 
-### 3. Run It!
-You can run your program using any of these simple methods:
+Calling:
 
-```bash
-# Option A: Direct command (if installed via pip / venv / PATH)
-fresh run hello.fresh
-
-# Option B: Windows local repo wrapper (works immediately with zero setup)
-.\fresh run hello.fresh
-
-# Option C: Universal Python module (works on any machine/shell)
-python -m fresh run hello.fresh
+```fresh
+dog.speak()
 ```
 
-> **Windows Tip**: If `fresh` is not recognized globally in your PowerShell, run this once:
-> ```powershell
-> [Environment]::SetEnvironmentVariable("Path", [Environment]::GetEnvironmentVariable("Path", "User") + ";$env:APPDATA\Python\Python314\Scripts", "User")
-> ```
-> Or simply use `.\fresh run hello.fresh`!
-
-**Output:**
-```text
-Hello, Developer! Welcome to Fresh ⚡
-```
-
+uses the `Dog` implementation.
 
 ---
 
-## 🌟 Key Highlights & Language Design
+# 🧰 Tooling
 
-Fresh merges the expressive readability of modern languages with the predictable performance of a bytecode VM and C native code generator:
+OOP support will also be integrated into Fresh's development tools.
 
-- **Static Typing with Local Inference**: Strict compile-time type verification with automatic type inference on `let` bindings.
-- **Top-Down Operator Precedence (Pratt Parser)**: Clean, robust expression parsing with exact precedence levels and recursion bounds.
-- **Visual Rust-Style Diagnostics**: Clear underline markers and error codes (`[E1001]` to `[E4001]`) for syntax and type errors.
-- **First-Class Closures & Upvalues**: Functions capture variables across scopes with state persistence.
-- **Pattern Matching with Guards**: Powerful `match` expressions supporting values, wildcards (`_`), and conditional `if` guard clauses.
-- **User-Defined Records & Structs**: Strongly typed struct records with in-place mutable fields.
-- **Dynamic Arrays & Matrices**: Native `[T]` arrays with `push`, `pop`, `len`, and multi-dimensional indexing.
-- **Mark-and-Sweep Garbage Collection**: Automatic memory management tracing stacks, upvalues, and globals with `FRESH_GC_STRESS=1` allocation mode.
-- **Native C Transpiler**: Compiles Fresh code directly to readable C99 with 1:1 behavioral equivalence for native binary builds (`gcc`, `clang`, `msvc`).
-- **Complete Developer Tooling**: Built-in formatter (`fresh fmt`), package manager (`fresh init`/`fresh build`), type checker (`fresh check`), and REPL (`fresh repl`).
+### Disassembler
 
----
-
-## 🏗 Architecture & Compiler Pipeline
-
-Fresh uses a unified multi-stage pipeline:
-
-```mermaid
-graph TD
-    A["Source Code (.fresh)"] --> B["Scanner / Lexer"]
-    B -->|"Token Stream"| C["Pratt Parser"]
-    C -->|"Abstract Syntax Tree (AST)"| D["Module Loader & Cycle Checker"]
-    D -->|"Expanded AST"| E["Resolver & Scope Checker"]
-    E -->|"Scoped AST"| F["Type Checker & Inferrer"]
-    
-    F -->|"Typed AST"| G["Bytecode Compiler"]
-    G -->|"Bytecode Chunk"| H["Peephole Optimizer"]
-    H -->|"Optimized Bytecode"| I["Virtual Machine (VM + GC)"]
-    I -->|"Runtime Output"| J["Program Result"]
-    
-    F -.->|"Typed AST"| K["C99 Transpiler"]
-    K -.->|"Native C Source"| L["C Compiler (GCC / Clang)"]
-    L -.->|"Native Binary"| M["Standalone Executable"]
-```
-
----
-
-## 💻 Command-Line Interface (CLI)
-
-The `fresh` CLI provides an all-in-one developer toolkit:
-
-| Command | Usage | Description |
-| :--- | :--- | :--- |
-| **`fresh run <file>`** | `fresh run main.fresh` | Compiles and executes a Fresh script on the Bytecode VM. |
-| **`fresh check <file>`** | `fresh check main.fresh` | Static analysis: checks types and resolves names without running. |
-| **`fresh fmt <file>`** | `fresh fmt main.fresh [--check]` | Formats source files idempotently according to standard Fresh style. |
-| **`fresh init <name>`** | `fresh init my_app` | Scaffolds a new project with directory structure and `fresh.toml`. |
-| **`fresh build [dir]`** | `fresh build .` | Builds the project entrypoint into a standalone native executable. |
-| **`fresh test [dir]`** | `fresh test tests/` | Runs the automated pytest test suite. |
-| **`fresh repl`** | `fresh repl` | Starts an interactive Read-Eval-Print-Loop session. |
-
-### Compiler Inspection Flags
-
-Inspect intermediate representations at any phase of compilation:
-
-```bash
-# Print token stream produced by lexical analysis
-fresh run main.fresh --dump-tokens
-
-# Print formatted Abstract Syntax Tree
-fresh run main.fresh --dump-ast
-
-# Print disassembled bytecode instructions & constant pool
-fresh run main.fresh --disassemble
-
-# Transpile Fresh AST directly into standalone C99 source code
-fresh run main.fresh --emit-c
-```
-
----
-
-## 🛠 VS Code Integration & 1-Click Execution
-
-The workspace includes ready-to-use VS Code configurations:
-
-1. **Press `F5`**: Runs the currently active `.fresh` file in the integrated terminal.
-2. **Press `Ctrl + Shift + B`**: Executes the default build task (`Fresh: Run Active File`).
-3. **Command Palette (`Ctrl + Shift + P` -> `Tasks: Run Task`)**:
-   - `Fresh: Run Active File`
-   - `Fresh: Type Check Active File`
-   - `Fresh: Format Active File`
-   - `Fresh: Run Test Suite`
-4. **Syntax Highlighting & File Icons**: Included in [`vscode-extension/`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/vscode-extension/).
-
----
-
-## 🧩 Feature Showcase & Code Examples
-
-Explore ready-to-run examples in the [`examples/`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/) directory:
-
-| Example File | Key Concept Demonstrated |
-| :--- | :--- |
-| [`all_features.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/all_features.fresh) | **Complete Tour**: Primitives, closures, matrices, structs, pattern matching, stdlib, file I/O |
-| [`01_fibonacci.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/01_fibonacci.fresh) | Recursive function calls, conditional returns, arithmetic |
-| [`02_matrix_multiply.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/02_matrix_multiply.fresh) | 2D dynamic arrays, nested loops, matrix multiplication |
-| [`03_quicksort.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/03_quicksort.fresh) | In-place array mutation, indexing, partition algorithm |
-| [`04_closure_counter.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/04_closure_counter.fresh) | Lexical closures, upvalue mutation across multiple function calls |
-| [`05_calculator.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/05_calculator.fresh) | First-class functions, higher-order function dispatch |
-| [`06_inventory.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/06_inventory.fresh) | User-defined structs, field mutations, inventory calculations |
-| [`07_stress_suite.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/07_stress_suite.fresh) | End-to-end stress test across all core language features |
-| [`08_aggressive_suite.fresh`](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/examples/08_aggressive_suite.fresh) | Deep recursion (Ackermann), map/filter higher-order lambdas, pattern guards |
-
----
-
-## 📂 Project Directory Structure
+`disassembler.py` will support:
 
 ```text
-NEW_LANG/
-├── all_features.fresh         # Complete feature showcase script
-├── LANGUAGE_GUIDE.md          # Comprehensive language tutorial and handbook
-├── README.md                  # Main project documentation (this file)
-├── pyproject.toml             # Python build metadata & tool configuration
-├── docs/                      # In-depth architectural documentation
-│   ├── FRESH_SPECIFICATION.md # Formal EBNF grammar & normative specification
-│   ├── project_guide.md       # Architecture & contributor implementation guide
-│   ├── COMPARISON.md          # Academic comparison vs Rust, Go, Python, Lua, C
-│   ├── PROS.md                # Language design rationale and benefits
-│   ├── COMPATIBILITY_AND_VERSIONING.md # Versioning & SemVer policy
-│   └── production_release_guide.md     # Packaging and release workflow
-├── examples/                  # Official runnable example programs
-├── src/fresh/                 # Fresh compiler & runtime core package
-│   ├── analyzer/              # Semantic analysis (Resolver, Type Checker)
-│   ├── codegen/               # Bytecode compiler, optimizer, and C transpiler
-│   ├── common/                # Shared AST tokens, type definitions, error types
-│   ├── lexer/                 # Scanner and token definitions
-│   ├── parser/                # Pratt expression parser and statement AST
-│   ├── stdlib/                # Built-in functions and math library
-│   ├── vm/                    # Virtual machine, CallFrame, and Mark-and-Sweep GC
-│   ├── cli.py                 # Command-line interface driver
-│   ├── formatter.py           # Canonical source code formatter
-│   ├── modules.py             # Multi-file module loader and cycle detector
-│   ├── package.py             # Package manager (init & build)
-│   └── pipeline.py            # Unified end-to-end execution pipeline
-├── tests/                     # 93 automated tests across all subsystems
-└── vscode-extension/          # Official VS Code syntax highlighter & icons
+OP_CLASS_DEF
+OP_METHOD
+OP_INHERIT
+OP_GET_THIS
+OP_SUPER_INVOKE
+```
+
+### Formatter
+
+`formatter.py` will format:
+
+- Class declarations
+- Fields
+- Constructors
+- Methods
+- `this`
+- `super`
+
+### C Transpiler
+
+`c_transpiler.py` will provide basic class translation using C structures.
+
+Conceptually:
+
+```text
+Fresh Class
+     │
+     ▼
+C typedef struct
+     │
+     ├── Fields
+     │
+     └── Method functions
+```
+
+Inheritance can be represented through structure embedding.
+
+---
+
+# 📚 Documentation
+
+The OOP documentation will be available in:
+
+```text
+LANGUAGE_GUIDE.md
+```
+
+A dedicated OOP section will cover:
+
+- Classes
+- Fields
+- Methods
+- Constructors
+- `this`
+- Inheritance
+- `super`
+- Method overriding
+- Complete examples
+
+---
+
+# 📁 Project Structure
+
+```text
+fresh-lang-main/
+│
+├── src/
+│   ├── tokens.py
+│   ├── scanner.py
+│   ├── ast.py
+│   ├── parser.py
+│   ├── resolver.py
+│   ├── types.py
+│   ├── type_checker.py
+│   ├── compiler.py
+│   ├── objects.py
+│   ├── opcodes.py
+│   ├── vm.py
+│   ├── value.py
+│   ├── disassembler.py
+│   ├── formatter.py
+│   └── c_transpiler.py
+│
+├── examples/
+│   └── oop_demo.fresh
+│
+├── tests/
+│
+├── docs/
+│
+├── LANGUAGE_GUIDE.md
+├── all_features.fresh
+└── README.md
 ```
 
 ---
 
-## 📚 Documentation Index
+# 🧪 Verification
 
-For in-depth guides, check the dedicated documents:
+All existing functionality should continue to work after the OOP implementation.
 
-- 📘 [**Language Guide (`LANGUAGE_GUIDE.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/LANGUAGE_GUIDE.md): Complete language tutorial from variables to closures and pattern matching.
-- 📐 [**Formal Specification (`docs/FRESH_SPECIFICATION.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/FRESH_SPECIFICATION.md): EBNF grammar, typing rules, and operational semantics.
-- 🏛 [**Architecture & Contributor Guide (`docs/project_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/project_guide.md): Deep-dive into compiler internals, AST structures, and VM bytecode engine.
-- ⚖️ [**Comparative Analysis (`docs/COMPARISON.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/COMPARISON.md): Architectural comparison against Rust, Go, Python, Lua, and C.
-- 💡 [**Project Advantages & Design Rationale (`docs/PROS.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/PROS.md): Why Fresh was built and key architectural strengths.
-- 🚀 [**Production & Release Guide (`docs/production_release_guide.md`)**](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/docs/production_release_guide.md): Wheel packaging, release checklist, and distribution.
-
----
-
-## 🧪 Running the Test Suite
-
-Run the full automated test suite containing unit, integration, differential, safety, and GC stress tests:
+Run the complete test suite:
 
 ```bash
-# Run all tests
-pytest -v
-
-# Run with test coverage report
-pytest --cov=fresh --cov-report=term-missing
+python -m pytest tests/ -v
 ```
+
+OOP functionality can then be manually verified with:
+
+```bash
+fresh run examples/oop_demo.fresh
+```
+
+AST output:
+
+```bash
+fresh run examples/oop_demo.fresh --dump-ast
+```
+
+Bytecode:
+
+```bash
+fresh run examples/oop_demo.fresh --disassemble
+```
+
+Type checking:
+
+```bash
+fresh check examples/oop_demo.fresh
+```
+
+Formatter:
+
+```bash
+fresh fmt examples/oop_demo.fresh --check
+```
+
+---
+
+# ❓ Design Questions
+
+The following features can be considered for future iterations:
+
+### Access Modifiers
+
+Should Fresh eventually support:
+
+```fresh
+public
+private
+protected
+```
+
+The initial implementation keeps fields and methods simple without access modifiers.
+
+### `new` Keyword
+
+The current design uses:
+
+```fresh
+let dog = Dog(...)
+```
+
+rather than:
+
+```fresh
+let dog = new Dog(...)
+```
+
+This maintains consistency with existing struct instantiation.
+
+### Static Methods
+
+Static methods can be introduced as a future extension:
+
+```fresh
+static fn create() -> Animal {
+    ...
+}
+```
+
+---
+
+# 🎯 Goals
+
+The OOP extension aims to make Fresh capable of expressing larger programs while keeping its syntax straightforward.
+
+The implementation focuses on:
+
+- 🧩 Simple class syntax
+- 🔗 Single inheritance
+- 🏗️ Constructors
+- 🎯 Instance methods
+- 👤 `this`
+- ⬆️ `super`
+- 🔄 Method overriding
+- 🧠 Static type checking
+- ⚡ Bytecode execution
+- 🛠️ Integrated compiler tooling
+
+---
+
+# 🌱 Fresh Language
+
+Fresh is being developed as a complete programming-language project, from source code all the way to execution.
+
+```text
+Source
+  ↓
+Lexer
+  ↓
+Parser
+  ↓
+AST
+  ↓
+Semantic Analysis
+  ↓
+Type Checker
+  ↓
+Bytecode Compiler
+  ↓
+Virtual Machine
+  ↓
+Execution
+```
+
+**Fresh is built to keep programming simple, readable, and — well — fresh. 🍃**
 
 ---
 
 ## 📄 License
 
-Fresh is open-source software distributed under the terms of the **[MIT License](file:///c:/Users/vihaa/OneDrive/Desktop/NEW_LANG/LICENSE)**.
+See the repository for license information.
+
+---
+
+<p align="center">
+  <b>🍃 Fresh Language</b><br>
+  A programming language built from the ground up.
+</p>

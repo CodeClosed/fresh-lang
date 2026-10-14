@@ -1,0 +1,36 @@
+// OOP Demo for Fresh language
+// Demonstrates class, inheritance, constructors, methods, this, super
+
+class Animal {
+    // Field for name
+    var name;
+    
+    // Constructor
+    init(name) {
+        this.name = name;
+    }
+    
+    // Method to speak
+    speak() {
+        print "<" + this.name + "> makes a sound";
+    }
+}
+
+class Dog extends Animal {
+    // Constructor calls super
+    init(name) {
+        super.init(name);
+    }
+    
+    // Override speak
+    speak() {
+        print "<" + this.name + "> barks";
+    }
+}
+
+// Create instances
+var a = Animal("Generic");
+var d = Dog("Rex");
+
+a.speak(); // expects: <Generic> makes a sound
+d.speak(); // expects: <Rex> barks
