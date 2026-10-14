@@ -1,0 +1,458 @@
+// lib/tensor.fresh - Numerical foundation and N-dimensional tensor engine for Fresh
+
+struct Tensor {
+    shape: [int],
+    data: [float],
+    ndim: int,
+    size: int,
+    strides: [int],
+
+    get1d: fn,
+    set1d: fn,
+    get2d: fn,
+    set2d: fn,
+    reshape: fn,
+    transpose: fn,
+    slice2d: fn,
+    add: fn,
+    sub: fn,
+    mul: fn,
+    div: fn,
+    scale: fn,
+    matmul: fn,
+    sum: fn,
+    mean: fn,
+    min: fn,
+    max: fn,
+    argmax: fn,
+    argmin: fn,
+    norm: fn,
+    to_2d_array: fn,
+    to_string: fn
+}
+
+fn _compute_strides(shape: [int]) -> [int] {
+    let nd = len(shape);
+    let strds: [int] = [];
+    for (let i = 0; i < nd; i = i + 1) {
+        push(strds, 1);
+    }
+    if (nd > 1) {
+        let acc = 1;
+        for (let i = nd - 1; i >= 0; i = i - 1) {
+            strds[i] = acc;
+            acc = acc * shape[i];
+        }
+    }
+    return strds;
+}
+
+fn _compute_size(shape: [int]) -> int {
+    let nd = len(shape);
+    if (nd == 0) {
+        return 0;
+    }
+    let sz = 1;
+    for (let i = 0; i < nd; i = i + 1) {
+        sz = sz * shape[i];
+    }
+    return sz;
+}
+
+fn tensor_create(data: [float], shape: [int]) -> Tensor {
+    let nd = len(shape);
+    let sz = _compute_size(shape);
+    let strds = _compute_strides(shape);
+
+    let t_data = data;
+    let t_shape = shape;
+
+    let get1d_fn = fn(idx: int) -> float {
+        return t_data[idx];
+    };
+
+    let set1d_fn = fn(idx: int, val: float) {
+        t_data[idx] = val;
+    };
+
+    let get2d_fn = fn(r: int, c: int) -> float {
+        let idx = r * t_shape[1] + c;
+        return t_data[idx];
+    };
+
+    let set2d_fn = fn(r: int, c: int, val: float) {
+        let idx = r * t_shape[1] + c;
+        t_data[idx] = val;
+    };
+
+    let reshape_fn = fn(new_shape: [int]) -> Tensor {
+        return tensor_create(t_data, new_shape);
+    };
+
+    let transpose_fn = fn() -> Tensor {
+        if (nd != 2) {
+            return tensor_create(t_data, t_shape);
+        }
+        let rows = t_shape[0];
+        let cols = t_shape[1];
+        let new_data: [float] = [];
+        for (let c = 0; c < cols; c = c + 1) {
+            for (let r = 0; r < rows; r = r + 1) {
+                push(new_data, t_data[r * cols + c]);
+            }
+        }
+        return tensor_create(new_data, [cols, rows]);
+    };
+
+    let slice2d_fn = fn(r_start: int, r_end: int, c_start: int, c_end: int) -> Tensor {
+        let cols = t_shape[1];
+        let new_rows = r_end - r_start;
+        let new_cols = c_end - c_start;
+        let new_data: [float] = [];
+        for (let r = r_start; r < r_end; r = r + 1) {
+            for (let c = c_start; c < c_end; c = c + 1) {
+                push(new_data, t_data[r * cols + c]);
+            }
+        }
+        return tensor_create(new_data, [new_rows, new_cols]);
+    };
+
+    let add_fn = fn(other: Tensor) -> Tensor {
+        let new_data: [float] = [];
+        for (let i = 0; i < sz; i = i + 1) {
+            push(new_data, t_data[i] + other.data[i]);
+        }
+        return tensor_create(new_data, t_shape);
+    };
+
+    let sub_fn = fn(other: Tensor) -> Tensor {
+        let new_data: [float] = [];
+        for (let i = 0; i < sz; i = i + 1) {
+            push(new_data, t_data[i] - other.data[i]);
+        }
+        return tensor_create(new_data, t_shape);
+    };
+
+    let mul_fn = fn(other: Tensor) -> Tensor {
+        let new_data: [float] = [];
+        for (let i = 0; i < sz; i = i + 1) {
+            push(new_data, t_data[i] * other.data[i]);
+        }
+        return tensor_create(new_data, t_shape);
+    };
+
+    let div_fn = fn(other: Tensor) -> Tensor {
+        let new_data: [float] = [];
+        for (let i = 0; i < sz; i = i + 1) {
+            let denom = other.data[i];
+            if (denom == 0.0) {
+                push(new_data, 0.0);
+            } else {
+                push(new_data, t_data[i] / denom);
+            }
+        }
+        return tensor_create(new_data, t_shape);
+    };
+
+    let scale_fn = fn(scalar: float) -> Tensor {
+        let new_data: [float] = [];
+        for (let i = 0; i < sz; i = i + 1) {
+            push(new_data, t_data[i] * scalar);
+        }
+        return tensor_create(new_data, t_shape);
+    };
+
+    let matmul_fn = fn(other: Tensor) -> Tensor {
+        let r1 = t_shape[0];
+        let k1 = t_shape[1];
+        let k2 = other.shape[0];
+        let c2 = other.shape[1];
+        let res_data: [float] = [];
+        for (let i = 0; i < r1; i = i + 1) {
+            for (let j = 0; j < c2; j = j + 1) {
+                let dot_sum = 0.0;
+                for (let k = 0; k < k1; k = k + 1) {
+                    dot_sum = dot_sum + t_data[i * k1 + k] * other.data[k * c2 + j];
+                }
+                push(res_data, dot_sum);
+            }
+        }
+        return tensor_create(res_data, [r1, c2]);
+    };
+
+    let sum_fn = fn() -> float {
+        let s = 0.0;
+        for (let i = 0; i < sz; i = i + 1) {
+            s = s + t_data[i];
+        }
+        return s;
+    };
+
+    let mean_fn = fn() -> float {
+        if (sz == 0) {
+            return 0.0;
+        }
+        let s = sum_fn();
+        return s / to_float(sz);
+    };
+
+    let min_fn = fn() -> float {
+        if (sz == 0) {
+            return 0.0;
+        }
+        let m = t_data[0];
+        for (let i = 1; i < sz; i = i + 1) {
+            if (t_data[i] < m) {
+                m = t_data[i];
+            }
+        }
+        return m;
+    };
+
+    let max_fn = fn() -> float {
+        if (sz == 0) {
+            return 0.0;
+        }
+        let m = t_data[0];
+        for (let i = 1; i < sz; i = i + 1) {
+            if (t_data[i] > m) {
+                m = t_data[i];
+            }
+        }
+        return m;
+    };
+
+    let argmax_fn = fn() -> int {
+        if (sz == 0) {
+            return 0;
+        }
+        let max_val = t_data[0];
+        let max_idx = 0;
+        for (let i = 1; i < sz; i = i + 1) {
+            if (t_data[i] > max_val) {
+                max_val = t_data[i];
+                max_idx = i;
+            }
+        }
+        return max_idx;
+    };
+
+    let argmin_fn = fn() -> int {
+        if (sz == 0) {
+            return 0;
+        }
+        let min_val = t_data[0];
+        let min_idx = 0;
+        for (let i = 1; i < sz; i = i + 1) {
+            if (t_data[i] < min_val) {
+                min_val = t_data[i];
+                min_idx = i;
+            }
+        }
+        return min_idx;
+    };
+
+    let norm_fn = fn() -> float {
+        let s = 0.0;
+        for (let i = 0; i < sz; i = i + 1) {
+            s = s + t_data[i] * t_data[i];
+        }
+        return sqrt(s);
+    };
+
+    let to_2d_array_fn = fn() -> [[float]] {
+        let out: [[float]] = [];
+        if (nd == 2) {
+            let rows = t_shape[0];
+            let cols = t_shape[1];
+            for (let r = 0; r < rows; r = r + 1) {
+                let row_arr: [float] = [];
+                for (let c = 0; c < cols; c = c + 1) {
+                    push(row_arr, t_data[r * cols + c]);
+                }
+                push(out, row_arr);
+            }
+        } else {
+            let row_arr: [float] = [];
+            for (let i = 0; i < sz; i = i + 1) {
+                push(row_arr, t_data[i]);
+            }
+            push(out, row_arr);
+        }
+        return out;
+    };
+
+    let to_string_fn = fn() -> string {
+        let repr = "Tensor(shape=" + to_string(t_shape) + ", data=[";
+        let limit = sz;
+        if (limit > 10) {
+            limit = 10;
+        }
+        for (let i = 0; i < limit; i = i + 1) {
+            if (i > 0) {
+                repr = repr + ", ";
+            }
+            repr = repr + to_string(t_data[i]);
+        }
+        if (sz > 10) {
+            repr = repr + ", ...";
+        }
+        repr = repr + "])";
+        return repr;
+    };
+
+    return Tensor {
+        shape: shape,
+        data: data,
+        ndim: nd,
+        size: sz,
+        strides: strds,
+        get1d: get1d_fn,
+        set1d: set1d_fn,
+        get2d: get2d_fn,
+        set2d: set2d_fn,
+        reshape: reshape_fn,
+        transpose: transpose_fn,
+        slice2d: slice2d_fn,
+        add: add_fn,
+        sub: sub_fn,
+        mul: mul_fn,
+        div: div_fn,
+        scale: scale_fn,
+        matmul: matmul_fn,
+        sum: sum_fn,
+        mean: mean_fn,
+        min: min_fn,
+        max: max_fn,
+        argmax: argmax_fn,
+        argmin: argmin_fn,
+        norm: norm_fn,
+        to_2d_array: to_2d_array_fn,
+        to_string: to_string_fn
+    };
+}
+
+fn tensor(arr: [[float]]) -> Tensor {
+    let rows = len(arr);
+    if (rows == 0) {
+        return tensor_create([], [0, 0]);
+    }
+    let cols = len(arr[0]);
+    let flat_data: [float] = [];
+    for (let r = 0; r < rows; r = r + 1) {
+        for (let c = 0; c < cols; c = c + 1) {
+            push(flat_data, arr[r][c]);
+        }
+    }
+    return tensor_create(flat_data, [rows, cols]);
+}
+
+fn tensor_1d(arr: [float]) -> Tensor {
+    let sz = len(arr);
+    let flat_data: [float] = [];
+    for (let i = 0; i < sz; i = i + 1) {
+        push(flat_data, arr[i]);
+    }
+    return tensor_create(flat_data, [sz]);
+}
+
+fn tensor_zeros(shape: [int]) -> Tensor {
+    let sz = _compute_size(shape);
+    let data: [float] = [];
+    for (let i = 0; i < sz; i = i + 1) {
+        push(data, 0.0);
+    }
+    return tensor_create(data, shape);
+}
+
+fn tensor_ones(shape: [int]) -> Tensor {
+    let sz = _compute_size(shape);
+    let data: [float] = [];
+    for (let i = 0; i < sz; i = i + 1) {
+        push(data, 1.0);
+    }
+    return tensor_create(data, shape);
+}
+
+fn tensor_arange(start: float, end_val: float, step: float) -> Tensor {
+    let data: [float] = [];
+    let cur = start;
+    while (cur < end_val) {
+        push(data, cur);
+        cur = cur + step;
+    }
+    return tensor_create(data, [len(data)]);
+}
+
+fn tensor_eye(n: int) -> Tensor {
+    let t = tensor_zeros([n, n]);
+    for (let i = 0; i < n; i = i + 1) {
+        t.set2d(i, i, 1.0);
+    }
+    return t;
+}
+
+fn tensor_matmul(a: Tensor, b: Tensor) -> Tensor {
+    return a.matmul(b);
+}
+
+fn tensor_dot(a: Tensor, b: Tensor) -> float {
+    let n = a.size;
+    let s = 0.0;
+    for (let i = 0; i < n; i = i + 1) {
+        s = s + a.data[i] * b.data[i];
+    }
+    return s;
+}
+
+fn tensor_det_2x2(t: Tensor) -> float {
+    return t.get2d(0, 0) * t.get2d(1, 1) - t.get2d(0, 1) * t.get2d(1, 0);
+}
+
+fn tensor_inv_2x2(t: Tensor) -> Tensor {
+    let det = tensor_det_2x2(t);
+    if (det == 0.0) {
+        return tensor_zeros([2, 2]);
+    }
+    let inv_det = 1.0 / det;
+    let a = t.get2d(0, 0);
+    let b = t.get2d(0, 1);
+    let c = t.get2d(1, 0);
+    let d = t.get2d(1, 1);
+
+    let res_data: [float] = [
+        d * inv_det,
+        -b * inv_det,
+        -c * inv_det,
+        a * inv_det
+    ];
+    return tensor_create(res_data, [2, 2]);
+}
+
+struct TensorModule {
+    create: fn,
+    from_2d: fn,
+    from_1d: fn,
+    zeros: fn,
+    ones: fn,
+    arange: fn,
+    eye: fn,
+    matmul: fn,
+    dot: fn,
+    det_2x2: fn,
+    inv_2x2: fn
+}
+
+let tensor_mod = TensorModule {
+    create: tensor_create,
+    from_2d: tensor,
+    from_1d: tensor_1d,
+    zeros: tensor_zeros,
+    ones: tensor_ones,
+    arange: tensor_arange,
+    eye: tensor_eye,
+    matmul: tensor_matmul,
+    dot: tensor_dot,
+    det_2x2: tensor_det_2x2,
+    inv_2x2: tensor_inv_2x2
+};

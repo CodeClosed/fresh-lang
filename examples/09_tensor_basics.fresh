@@ -1,0 +1,72 @@
+// examples/09_tensor_basics.fresh - Comprehensive test & showcase of fresh.tensor
+import tensor;
+
+println("==================================================");
+println("        FRESH.TENSOR - NUMERICAL FOUNDATION       ");
+println("==================================================");
+
+// 1. Matrix Construction and Shape
+let m1 = tensor([
+    [1.0, 2.0, 3.0],
+    [4.0, 5.0, 6.0]
+]);
+
+let m2 = tensor([
+    [7.0, 8.0],
+    [9.0, 10.0],
+    [11.0, 12.0]
+]);
+
+println("Matrix 1: " + m1.to_string());
+println("Matrix 2: " + m2.to_string());
+
+// 2. Matrix Multiplication
+let prod = m1.matmul(m2);
+println("m1 @ m2 = " + prod.to_string());
+println("Result dimensions: rows=" + to_string(prod.shape[0]) + ", cols=" + to_string(prod.shape[1]));
+println("Top-left element (0,0): " + to_string(prod.get2d(0, 0))); // 1*7 + 2*9 + 3*11 = 7 + 18 + 33 = 58
+println("Bottom-right element (1,1): " + to_string(prod.get2d(1, 1))); // 4*8 + 5*10 + 6*12 = 32 + 50 + 72 = 154
+
+// 3. Transpose
+let m1_t = m1.transpose();
+println("m1 transposed: " + m1_t.to_string());
+println("m1_t shape: " + to_string(m1_t.shape));
+
+// 4. Element-wise Arithmetic
+let a = tensor([[10.0, 20.0], [30.0, 40.0]]);
+let b = tensor([[1.0, 2.0], [3.0, 4.0]]);
+println("a + b = " + a.add(b).to_string());
+println("a - b = " + a.sub(b).to_string());
+println("a * b = " + a.mul(b).to_string());
+println("a / b = " + a.div(b).to_string());
+println("a * 2.5 = " + a.scale(2.5).to_string());
+
+// 5. Reductions
+println("Sum of a: " + to_string(a.sum()));
+println("Mean of a: " + to_string(a.mean()));
+println("Min of a: " + to_string(a.min()));
+println("Max of a: " + to_string(a.max()));
+println("Argmax of a: " + to_string(a.argmax()));
+println("L2 Norm of b: " + to_string(b.norm()));
+
+// 6. Reshape & Slicing
+let v = tensor_arange(0.0, 9.0, 1.0);
+println("Vector 0..8: " + v.to_string());
+let mat3x3 = v.reshape([3, 3]);
+println("Reshaped to 3x3: " + mat3x3.to_string());
+let sub_mat = mat3x3.slice2d(0, 2, 1, 3);
+println("Slice [0:2, 1:3]: " + sub_mat.to_string());
+
+// 7. Determinant & 2x2 Matrix Inverse
+let square_mat = tensor([[4.0, 7.0], [2.0, 6.0]]);
+let det = tensor_det_2x2(square_mat); // 4*6 - 7*2 = 24 - 14 = 10
+println("Determinant of square_mat: " + to_string(det));
+
+let inv = tensor_inv_2x2(square_mat);
+println("Inverse of square_mat: " + inv.to_string());
+let check_identity = square_mat.matmul(inv);
+println("square_mat @ inv = " + check_identity.to_string());
+
+println("==================================================");
+println(" [SUCCESS] fresh.tensor tests passed cleanly!    ");
+println("==================================================");

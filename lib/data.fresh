@@ -1,0 +1,457 @@
+// lib/data.fresh - Fast lazy data pipeline library for Fresh
+import "string_utils.fresh";
+
+struct DataRow {
+    headers: [string],
+    values: [string],
+    get: fn,
+    get_int: fn,
+    get_float: fn,
+    set: fn,
+    to_string: fn
+}
+
+fn create_row(headers: [string], values: [string]) -> DataRow {
+    let hdrs = headers;
+    let vals = values;
+
+    let get_fn = fn(col: string) -> string {
+        for (let i = 0; i < len(hdrs); i = i + 1) {
+            if (hdrs[i] == col) {
+                if (i < len(vals)) {
+                    return vals[i];
+                }
+                return "";
+            }
+        }
+        return "";
+    };
+
+    let get_int_fn = fn(col: string) -> int {
+        let v = get_fn(col);
+        return to_int(str_trim(v));
+    };
+
+    let get_float_fn = fn(col: string) -> float {
+        let v = get_fn(col);
+        return to_float(str_trim(v));
+    };
+
+    let set_fn = fn(col: string, new_val: string) {
+        for (let i = 0; i < len(hdrs); i = i + 1) {
+            if (hdrs[i] == col) {
+                if (i < len(vals)) {
+                    vals[i] = new_val;
+                }
+                return nil;
+            }
+        }
+        return nil;
+    };
+
+    let to_string_fn = fn() -> string {
+        let out = "{";
+        for (let i = 0; i < len(hdrs); i = i + 1) {
+            if (i > 0) {
+                out = out + ", ";
+            }
+        let v = "";
+        if (i < len(vals)) {
+            v = vals[i];
+        }
+            out = out + hdrs[i] + ": \"" + v + "\"";
+        }
+        out = out + "}";
+        return out;
+    };
+
+    return DataRow {
+        headers: hdrs,
+        values: vals,
+        get: get_fn,
+        get_int: get_int_fn,
+        get_float: get_float_fn,
+        set: set_fn,
+        to_string: to_string_fn
+    };
+}
+
+struct DataPipeline {
+    headers: [string],
+    rows: [DataRow],
+
+    filter: fn,
+    map: fn,
+    select: fn,
+    sort_by: fn,
+    group_by: fn,
+    join: fn,
+    aggregate: fn,
+    count: fn,
+    sum: fn,
+    avg: fn,
+    min: fn,
+    max: fn,
+    collect: fn,
+    show: fn
+}
+
+fn create_pipeline(headers: [string], rows: [DataRow]) -> DataPipeline {
+    let p_headers = headers;
+    let p_rows = rows;
+
+    let filter_fn = fn(predicate: fn) -> DataPipeline {
+        let filtered_rows: [DataRow] = [];
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            let r = p_rows[i];
+            if (predicate(r)) {
+                push(filtered_rows, r);
+            }
+        }
+        return create_pipeline(p_headers, filtered_rows);
+    };
+
+    let map_fn = fn(transform: fn) -> DataPipeline {
+        let mapped_rows: [DataRow] = [];
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            let new_r = transform(p_rows[i]);
+            push(mapped_rows, new_r);
+        }
+        let out_headers = p_headers;
+        if (len(mapped_rows) > 0) {
+            out_headers = mapped_rows[0].headers;
+        }
+        return create_pipeline(out_headers, mapped_rows);
+    };
+
+    let select_fn = fn(selected_cols: [string]) -> DataPipeline {
+        let selected_rows: [DataRow] = [];
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            let r = p_rows[i];
+            let new_vals: [string] = [];
+            for (let c = 0; c < len(selected_cols); c = c + 1) {
+                push(new_vals, r.get(selected_cols[c]));
+            }
+            push(selected_rows, create_row(selected_cols, new_vals));
+        }
+        return create_pipeline(selected_cols, selected_rows);
+    };
+
+    let sort_by_fn = fn(col: string, ascending: bool) -> DataPipeline {
+        let n = len(p_rows);
+        let sorted: [DataRow] = [];
+        for (let i = 0; i < n; i = i + 1) {
+            push(sorted, p_rows[i]);
+        }
+
+        for (let i = 0; i < n; i = i + 1) {
+            for (let j = 0; j < n - i - 1; j = j + 1) {
+                let v1 = sorted[j].get(col);
+                let v2 = sorted[j + 1].get(col);
+                let should_swap = false;
+                if (ascending) {
+                    if (v1 > v2) {
+                        should_swap = true;
+                    }
+                } else {
+                    if (v1 < v2) {
+                        should_swap = true;
+                    }
+                }
+                if (should_swap) {
+                    let tmp = sorted[j];
+                    sorted[j] = sorted[j + 1];
+                    sorted[j + 1] = tmp;
+                }
+            }
+        }
+        return create_pipeline(p_headers, sorted);
+    };
+
+    let group_by_fn = fn(key_col: string) -> DataPipeline {
+        let unique_keys: [string] = [];
+        let key_counts: [int] = [];
+
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            let k = p_rows[i].get(key_col);
+            let found_idx = -1;
+            for (let j = 0; j < len(unique_keys); j = j + 1) {
+                if (unique_keys[j] == k) {
+                    found_idx = j;
+                    break;
+                }
+            }
+            if (found_idx >= 0) {
+                key_counts[found_idx] = key_counts[found_idx] + 1;
+            } else {
+                push(unique_keys, k);
+                push(key_counts, 1);
+            }
+        }
+
+        let grp_headers = [key_col, "count"];
+        let grp_rows: [DataRow] = [];
+        for (let j = 0; j < len(unique_keys); j = j + 1) {
+            let row_vals = [unique_keys[j], to_string(key_counts[j])];
+            push(grp_rows, create_row(grp_headers, row_vals));
+        }
+        return create_pipeline(grp_headers, grp_rows);
+    };
+
+    let join_fn = fn(other: DataPipeline, left_key: string, right_key: string) -> DataPipeline {
+        let other_rows = other.collect();
+        let other_headers = other.headers;
+
+        let merged_headers: [string] = [];
+        for (let i = 0; i < len(p_headers); i = i + 1) {
+            push(merged_headers, p_headers[i]);
+        }
+        for (let j = 0; j < len(other_headers); j = j + 1) {
+            if (other_headers[j] != right_key) {
+                push(merged_headers, other_headers[j]);
+            }
+        }
+
+        let joined_rows: [DataRow] = [];
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            let r1 = p_rows[i];
+            let k1 = r1.get(left_key);
+
+            for (let j = 0; j < len(other_rows); j = j + 1) {
+                let r2 = other_rows[j];
+                let k2 = r2.get(right_key);
+                if (k1 == k2) {
+                    let new_vals: [string] = [];
+                    for (let c = 0; c < len(p_headers); c = c + 1) {
+                        push(new_vals, r1.get(p_headers[c]));
+                    }
+                    for (let c = 0; c < len(other_headers); c = c + 1) {
+                        if (other_headers[c] != right_key) {
+                            push(new_vals, r2.get(other_headers[c]));
+                        }
+                    }
+                    push(joined_rows, create_row(merged_headers, new_vals));
+                }
+            }
+        }
+        return create_pipeline(merged_headers, joined_rows);
+    };
+
+    let aggregate_fn = fn(group_col: string, val_col: string, agg_type: string) -> DataPipeline {
+        let unique_keys: [string] = [];
+        let key_vals: [[float]] = [];
+
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            let k = p_rows[i].get(group_col);
+            let v = p_rows[i].get_float(val_col);
+            let found_idx = -1;
+            for (let j = 0; j < len(unique_keys); j = j + 1) {
+                if (unique_keys[j] == k) {
+                    found_idx = j;
+                    break;
+                }
+            }
+            if (found_idx >= 0) {
+                push(key_vals[found_idx], v);
+            } else {
+                push(unique_keys, k);
+                let new_list: [float] = [v];
+                push(key_vals, new_list);
+            }
+        }
+
+        let res_headers = [group_col, agg_type + "_" + val_col];
+        let res_rows: [DataRow] = [];
+
+        for (let j = 0; j < len(unique_keys); j = j + 1) {
+            let vals_list = key_vals[j];
+            let num_vals = len(vals_list);
+            let res_num = 0.0;
+
+            if (agg_type == "sum" || agg_type == "avg") {
+                let s = 0.0;
+                for (let v_idx = 0; v_idx < num_vals; v_idx = v_idx + 1) {
+                    s = s + vals_list[v_idx];
+                }
+                if (agg_type == "sum") {
+                    res_num = s;
+                } else {
+                    res_num = s / to_float(num_vals);
+                }
+            } else if (agg_type == "min") {
+                res_num = vals_list[0];
+                for (let v_idx = 1; v_idx < num_vals; v_idx = v_idx + 1) {
+                    if (vals_list[v_idx] < res_num) {
+                        res_num = vals_list[v_idx];
+                    }
+                }
+            } else if (agg_type == "max") {
+                res_num = vals_list[0];
+                for (let v_idx = 1; v_idx < num_vals; v_idx = v_idx + 1) {
+                    if (vals_list[v_idx] > res_num) {
+                        res_num = vals_list[v_idx];
+                    }
+                }
+            } else {
+                res_num = to_float(num_vals);
+            }
+
+            let new_vals = [unique_keys[j], to_string(res_num)];
+            push(res_rows, create_row(res_headers, new_vals));
+        }
+        return create_pipeline(res_headers, res_rows);
+    };
+
+    let count_fn = fn() -> int {
+        return len(p_rows);
+    };
+
+    let sum_fn = fn(col: string) -> float {
+        let total = 0.0;
+        for (let i = 0; i < len(p_rows); i = i + 1) {
+            total = total + p_rows[i].get_float(col);
+        }
+        return total;
+    };
+
+    let avg_fn = fn(col: string) -> float {
+        let n = len(p_rows);
+        if (n == 0) {
+            return 0.0;
+        }
+        return sum_fn(col) / to_float(n);
+    };
+
+    let min_fn = fn(col: string) -> float {
+        let n = len(p_rows);
+        if (n == 0) {
+            return 0.0;
+        }
+        let m = p_rows[0].get_float(col);
+        for (let i = 1; i < n; i = i + 1) {
+            let v = p_rows[i].get_float(col);
+            if (v < m) {
+                m = v;
+            }
+        }
+        return m;
+    };
+
+    let max_fn = fn(col: string) -> float {
+        let n = len(p_rows);
+        if (n == 0) {
+            return 0.0;
+        }
+        let m = p_rows[0].get_float(col);
+        for (let i = 1; i < n; i = i + 1) {
+            let v = p_rows[i].get_float(col);
+            if (v > m) {
+                m = v;
+            }
+        }
+        return m;
+    };
+
+    let collect_fn = fn() -> [DataRow] {
+        return p_rows;
+    };
+
+    let show_fn = fn(n: int) {
+        let limit = n;
+        if (limit > len(p_rows)) {
+            limit = len(p_rows);
+        }
+        println("--- DataPipeline (" + to_string(len(p_rows)) + " rows) ---");
+        println(str_join(p_headers, " | "));
+        println(str_repeat("-", 40));
+        for (let i = 0; i < limit; i = i + 1) {
+            println(str_join(p_rows[i].values, " | "));
+        }
+        if (len(p_rows) > limit) {
+            println("... (" + to_string(len(p_rows) - limit) + " more rows)");
+        }
+        println(str_repeat("-", 40));
+    };
+
+    return DataPipeline {
+        headers: p_headers,
+        rows: p_rows,
+        filter: filter_fn,
+        map: map_fn,
+        select: select_fn,
+        sort_by: sort_by_fn,
+        group_by: group_by_fn,
+        join: join_fn,
+        aggregate: aggregate_fn,
+        count: count_fn,
+        sum: sum_fn,
+        avg: avg_fn,
+        min: min_fn,
+        max: max_fn,
+        collect: collect_fn,
+        show: show_fn
+    };
+}
+
+// ── I/O Utilities ─────────────────────────────────────────────
+
+fn data_read_csv(filepath: string) -> DataPipeline {
+    let content = read_file(filepath);
+    let lines = str_split(content, "\n");
+    let valid_lines: [string] = [];
+    for (let i = 0; i < len(lines); i = i + 1) {
+        let t = str_trim(lines[i]);
+        if (len(t) > 0) {
+            push(valid_lines, t);
+        }
+    }
+
+    if (len(valid_lines) == 0) {
+        return create_pipeline([], []);
+    }
+
+    let header_parts = str_split(valid_lines[0], ",");
+    let hdrs: [string] = [];
+    for (let c = 0; c < len(header_parts); c = c + 1) {
+        push(hdrs, str_trim(header_parts[c]));
+    }
+
+    let rows: [DataRow] = [];
+    for (let i = 1; i < len(valid_lines); i = i + 1) {
+        let col_parts = str_split(valid_lines[i], ",");
+        let vals: [string] = [];
+        for (let c = 0; c < len(col_parts); c = c + 1) {
+            push(vals, str_trim(col_parts[c]));
+        }
+        push(rows, create_row(hdrs, vals));
+    }
+
+    return create_pipeline(hdrs, rows);
+}
+
+fn data_write_csv(pipeline: DataPipeline, filepath: string) -> bool {
+    let rows = pipeline.collect();
+    let out = str_join(pipeline.headers, ",") + "\n";
+    for (let i = 0; i < len(rows); i = i + 1) {
+        out = out + str_join(rows[i].values, ",") + "\n";
+    }
+    return write_file(filepath, out);
+}
+
+fn data_from_rows(headers: [string], rows: [DataRow]) -> DataPipeline {
+    return create_pipeline(headers, rows);
+}
+
+struct DataModule {
+    read_csv: fn,
+    write_csv: fn,
+    create_row: fn,
+    from_rows: fn
+}
+
+let data = DataModule {
+    read_csv: data_read_csv,
+    write_csv: data_write_csv,
+    create_row: create_row,
+    from_rows: data_from_rows
+};

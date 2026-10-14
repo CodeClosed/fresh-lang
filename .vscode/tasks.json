@@ -1,0 +1,66 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Fresh: Run Active File",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "fresh",
+                "run",
+                "${file}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Fresh: Type Check Active File",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "fresh",
+                "check",
+                "${file}"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Fresh: Format Active File",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "fresh",
+                "fmt",
+                "${file}"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Fresh: Run Test Suite",
+            "type": "shell",
+            "command": "python",
+            "args": [
+                "-m",
+                "pytest"
+            ],
+            "group": "test",
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared",
+                "clear": true
+            },
+            "problemMatcher": []
+        }
+    ]
+}

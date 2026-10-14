@@ -1,0 +1,86 @@
+{
+  "fibonacci": {
+    "name": "Recursive Fibonacci (fib(28))",
+    "metrics": {
+      "C (GCC -O3)": {
+        "time_ms": 33.1,
+        "memory_mb": 3.77
+      },
+      "Fresh (Native C)": {
+        "time_ms": 40.73,
+        "memory_mb": 3.77
+      },
+      "Python (3.12)": {
+        "time_ms": 299.77,
+        "memory_mb": 9.02
+      },
+      "Fresh (Bytecode VM)": {
+        "time_ms": 49698.6,
+        "memory_mb": 3.44
+      }
+    }
+  },
+  "prime_sieve": {
+    "name": "Prime Number Sieve (10,000 limit)",
+    "metrics": {
+      "C (GCC -O3)": {
+        "time_ms": 25.46,
+        "memory_mb": 3.67
+      },
+      "Fresh (Native C)": {
+        "time_ms": 24.67,
+        "memory_mb": 3.73
+      },
+      "Python (3.12)": {
+        "time_ms": 125.91,
+        "memory_mb": 9.04
+      },
+      "Fresh (Bytecode VM)": {
+        "time_ms": 9498.77,
+        "memory_mb": 3.44
+      }
+    }
+  },
+  "data_pipeline": {
+    "name": "Data Pipeline (10,000 items)",
+    "metrics": {
+      "C (GCC -O3)": {
+        "time_ms": 29.61,
+        "memory_mb": 3.39
+      },
+      "Fresh (Native C)": {
+        "time_ms": 26.7,
+        "memory_mb": 3.76
+      },
+      "Python (3.12)": {
+        "time_ms": 174.28,
+        "memory_mb": 9.0
+      },
+      "Fresh (Bytecode VM)": {
+        "time_ms": 1565.86,
+        "memory_mb": 3.45
+      }
+    }
+  },
+  "quicksort": {
+    "name": "QuickSort (2,000 elements)",
+    "metrics": {
+      "C (GCC -O3)": {
+        "time_ms": 28.16,
+        "memory_mb": 3.35
+      },
+      "Fresh (Native C)": {
+        "time_ms": null,
+        "memory_mb": null
+      },
+      "Python (3.12)": {
+        "time_ms": 116.65,
+        "memory_mb": 9.19
+      },
+      "Fresh (Bytecode VM)": {
+        "time_ms": 3693.29,
+        "memory_mb": 3.44
+      }
+    }
+  }
+}

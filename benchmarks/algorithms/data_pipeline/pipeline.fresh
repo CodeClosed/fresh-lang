@@ -1,0 +1,15 @@
+// Ingest, filter (even values > 50), transform (multiply by 3), and accumulate sum
+let COUNT = 10000;
+let total_sum = 0;
+let matched_count = 0;
+
+for (let i = 0; i < COUNT; i = i + 1) {
+    let val = (i * 7 + 13) % 1000;
+    if (val > 50 && val % 2 == 0) {
+        let transformed = val * 3;
+        total_sum = total_sum + transformed;
+        matched_count = matched_count + 1;
+    }
+}
+
+println("Pipeline Completed. Matched: " + to_string(matched_count) + ", Total Sum: " + to_string(total_sum));

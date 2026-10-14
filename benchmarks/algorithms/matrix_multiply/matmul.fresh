@@ -1,0 +1,32 @@
+// 64x64 Matrix Multiplication
+let N = 64;
+
+// Initialize matrices A and B
+let A = [];
+let B = [];
+for (let i = 0; i < N; i = i + 1) {
+    let rowA = [];
+    let rowB = [];
+    for (let j = 0; j < N; j = j + 1) {
+        rowA.push(1.0);
+        rowB.push(2.0);
+    }
+    A.push(rowA);
+    B.push(rowB);
+}
+
+// Compute C = A x B
+let C = [];
+for (let i = 0; i < N; i = i + 1) {
+    let rowC = [];
+    for (let j = 0; j < N; j = j + 1) {
+        let sum = 0.0;
+        for (let k = 0; k < N; k = k + 1) {
+            sum = sum + A[i][k] * B[k][j];
+        }
+        rowC.push(sum);
+    }
+    C.push(rowC);
+}
+
+println("Matrix Multiply Completed. C[0][0] = " + to_string(C[0][0]) + ", C[63][63] = " + to_string(C[63][63]));

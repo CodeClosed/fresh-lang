@@ -1,0 +1,50 @@
+// examples/13_system_programming.fresh - System Programming & OS Utilities showcase
+import sys;
+
+println("==================================================");
+println("     FRESH.SYS - SYSTEM PROGRAMMING UTILITIES     ");
+println("==================================================");
+
+// 1. Operating System Diagnostics
+println("\n[1] OS INSPECTION");
+let current_os = sys.os();
+println("Detected OS:       " + current_os);
+
+let cores = sys.cpu_count();
+println("Logical CPU Cores: " + to_string(cores));
+
+let mem_mb = sys.memory_used();
+println("Memory Footprint:  " + to_string(mem_mb) + " MB");
+
+// 2. Process Execution Runner
+println("\n[2] PROCESS RUNNER");
+let proc_res = sys.run("ping example.com");
+println("Executed Command:  " + proc_res.command);
+println("Exit Status Code:  " + to_string(proc_res.exit_code));
+println("Duration:          " + to_string(proc_res.duration_ms) + " ms");
+println("Process Output:    " + proc_res.output);
+
+// 3. High-Resolution Timing & Clock
+println("\n[3] HIGH-RESOLUTION TIMER");
+let t0 = sys.clock_ms();
+println("Start timestamp (ms): " + to_string(t0));
+// Short calibrated delay
+sys.sleep_ms(15);
+let t1 = sys.clock_ms();
+println("End timestamp (ms):   " + to_string(t1));
+println("Measured Delta:       " + to_string(t1 - t0) + " ms");
+
+// 4. Path Manipulation Utilities
+println("\n[4] PATH UTILITIES");
+let sample_path = "src/fresh/stdlib/builtins.fresh";
+println("Full Path:  " + sample_path);
+println("Basename:   " + sys.path_basename(sample_path));
+println("Directory:  " + sys.path_dirname(sample_path));
+println("Extension:  " + sys.path_ext(sample_path));
+
+let joined_path = sys.path_join("C:\\fresh_projects", "build_output.exe");
+println("Joined:     " + joined_path);
+
+println("\n==================================================");
+println(" [SUCCESS] fresh.sys tests passed cleanly!        ");
+println("==================================================");

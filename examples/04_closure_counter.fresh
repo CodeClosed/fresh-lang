@@ -1,0 +1,30 @@
+fn make_counter(start: int) -> fn {
+    let count = start;
+    fn increment() -> int {
+        count = count + 1;
+        return count;
+    }
+    return increment;
+}
+
+let counterA = make_counter(0);
+
+let counterB = make_counter(100);
+
+println("Counter A (starts at 0):");
+
+println("A: " + to_string(counterA()));
+
+println("A: " + to_string(counterA()));
+
+println("A: " + to_string(counterA()));
+
+println("\nCounter B (starts at 100):");
+
+println("B: " + to_string(counterB()));
+
+println("B: " + to_string(counterB()));
+
+println("\nCounter A independent state check:");
+
+println("A: " + to_string(counterA()));

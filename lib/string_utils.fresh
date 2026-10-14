@@ -1,0 +1,206 @@
+// lib/string_utils.fresh - String manipulation and parsing utilities for Fresh
+
+fn str_substr(s: string, start: int, count: int) -> string {
+    let s_len = len(s);
+    if (start < 0 || start >= s_len || count <= 0) {
+        return "";
+    }
+    let end_idx = start + count;
+    if (end_idx > s_len) {
+        end_idx = s_len;
+    }
+    let out = "";
+    for (let i = start; i < end_idx; i = i + 1) {
+        out = out + s[i];
+    }
+    return out;
+}
+
+fn str_slice(s: string, start: int, end_idx: int) -> string {
+    let s_len = len(s);
+    let st = start;
+    if (st < 0) {
+        st = 0;
+    }
+    let ed = end_idx;
+    if (ed > s_len) {
+        ed = s_len;
+    }
+    if (st >= ed) {
+        return "";
+    }
+    let out = "";
+    for (let i = st; i < ed; i = i + 1) {
+        out = out + s[i];
+    }
+    return out;
+}
+
+fn str_index_of(s: string, needle: string) -> int {
+    let n_len = len(needle);
+    let s_len = len(s);
+    if (n_len == 0) {
+        return 0;
+    }
+    if (n_len > s_len) {
+        return -1;
+    }
+    let limit = s_len - n_len + 1;
+    for (let i = 0; i < limit; i = i + 1) {
+        let match_found = true;
+        for (let j = 0; j < n_len; j = j + 1) {
+            if (s[i + j] != needle[j]) {
+                match_found = false;
+                break;
+            }
+        }
+        if (match_found) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+fn str_contains(s: string, needle: string) -> bool {
+    return str_index_of(s, needle) >= 0;
+}
+
+fn str_starts_with(s: string, prefix: string) -> bool {
+    let p_len = len(prefix);
+    if (p_len > len(s)) {
+        return false;
+    }
+    for (let i = 0; i < p_len; i = i + 1) {
+        if (s[i] != prefix[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn str_ends_with(s: string, suffix: string) -> bool {
+    let s_len = len(s);
+    let suf_len = len(suffix);
+    if (suf_len > s_len) {
+        return false;
+    }
+    let offset = s_len - suf_len;
+    for (let i = 0; i < suf_len; i = i + 1) {
+        if (s[offset + i] != suffix[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
+fn _is_whitespace(c: string) -> bool {
+    return c == " " || c == "\t" || c == "\n" || c == "\r";
+}
+
+fn str_trim_left(s: string) -> string {
+    let s_len = len(s);
+    let start = 0;
+    while (start < s_len && _is_whitespace(s[start])) {
+        start = start + 1;
+    }
+    if (start >= s_len) {
+        return "";
+    }
+    return str_slice(s, start, s_len);
+}
+
+fn str_trim_right(s: string) -> string {
+    let s_len = len(s);
+    let ed = s_len;
+    while (ed > 0 && _is_whitespace(s[ed - 1])) {
+        ed = ed - 1;
+    }
+    if (ed <= 0) {
+        return "";
+    }
+    return str_slice(s, 0, ed);
+}
+
+fn str_trim(s: string) -> string {
+    return str_trim_left(str_trim_right(s));
+}
+
+fn str_split(s: string, delim: string) -> [string] {
+    let result: [string] = [];
+    let s_len = len(s);
+    let d_len = len(delim);
+    if (s_len == 0) {
+        return result;
+    }
+    if (d_len == 0) {
+        for (let i = 0; i < s_len; i = i + 1) {
+            push(result, s[i]);
+        }
+        return result;
+    }
+
+    let start = 0;
+    let limit = s_len - d_len + 1;
+    let i = 0;
+    while (i < limit) {
+        let match_delim = true;
+        for (let j = 0; j < d_len; j = j + 1) {
+            if (s[i + j] != delim[j]) {
+                match_delim = false;
+                break;
+            }
+        }
+        if (match_delim) {
+            push(result, str_slice(s, start, i));
+            start = i + d_len;
+            i = start;
+        } else {
+            i = i + 1;
+        }
+    }
+    push(result, str_slice(s, start, s_len));
+    return result;
+}
+
+fn str_join(arr: [string], sep: string) -> string {
+    let n = len(arr);
+    if (n == 0) {
+        return "";
+    }
+    let out = arr[0];
+    for (let i = 1; i < n; i = i + 1) {
+        out = out + sep + arr[i];
+    }
+    return out;
+}
+
+fn str_repeat(s: string, count: int) -> string {
+    let out = "";
+    for (let i = 0; i < count; i = i + 1) {
+        out = out + s;
+    }
+    return out;
+}
+
+fn str_pad_left(s: string, width: int, pad_char: string) -> string {
+    let cur_len = len(s);
+    if (cur_len >= width) {
+        return s;
+    }
+    let pad = str_repeat(pad_char, width - cur_len);
+    return pad + s;
+}
+
+fn str_pad_right(s: string, width: int, pad_char: string) -> string {
+    let cur_len = len(s);
+    if (cur_len >= width) {
+        return s;
+    }
+    let pad = str_repeat(pad_char, width - cur_len);
+    return s + pad;
+}
+
+fn str_replace(s: string, old_sub: string, new_sub: string) -> string {
+    let parts = str_split(s, old_sub);
+    return str_join(parts, new_sub);
+}

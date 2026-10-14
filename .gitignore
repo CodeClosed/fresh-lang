@@ -1,0 +1,50 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.class
+*.pyc
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+*.vsix
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Scratch & Temporary outputs
+stress_test_temp.txt
+fresh_demo_output.txt
+test_output.txt
+demo_test_file.txt
+vex_demo_output.txt
+scratch/
+fresh.spec
+fib.c
+fib.exe
+demo_app/
+myapp/
+sample_app/
+NEW_LANG/
+
+*.exe
+*.obj
+*.o
+*.pdb
+
+# Editor & OS artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

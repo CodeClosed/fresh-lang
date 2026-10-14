@@ -1,0 +1,128 @@
+// ================================================================
+//        FRESH PROGRAMMING LANGUAGE — MASTER SYNTAX DEMO
+// ================================================================
+
+println("================================================================");
+println("       *** FRESH PROGRAMMING LANGUAGE MASTER SYNTAX DEMO ***       ");
+println("================================================================");
+
+// 1. PRIMITIVES & OPERATORS
+let my_int: int = 42;
+let my_float: float = 3.14159;
+let my_bool: bool = true;
+let my_str: string = "Fresh Language";
+let my_nil = nil;
+
+println("\n[1] PRIMITIVES & ARITHMETIC:");
+println("int:", my_int, "| float:", my_float, "| bool:", my_bool, "| str:", my_str);
+println("Math calculation (42 * 2 + 10 / 2 - 4 % 3) =", 42 * 2 + 10 / 2 - 4 % 3);
+
+// 2. CONTROL FLOW (IF / WHILE / FOR)
+println("\n[2] CONTROL FLOW:");
+let test_score = 88;
+if (test_score >= 90) {
+    println("Score 88: Grade A");
+} else if (test_score >= 80) {
+    println("Score 88: Grade B");
+} else {
+    println("Score 88: Grade C or below");
+}
+
+let even_sum = 0;
+for (let i = 1; i <= 10; i = i + 1) {
+    if (i % 2 == 0) {
+        even_sum = even_sum + i;
+    }
+}
+println("Sum of even numbers 1..10 =", even_sum);
+
+// 3. FUNCTIONS & RECURSION
+println("\n[3] FUNCTIONS & RECURSION:");
+fn fib(n: int) -> int {
+    if (n <= 1) {
+        return n;
+    }
+    return fib(n - 1) + fib(n - 2);
+}
+println("fibonacci(10) =", fib(10));
+
+// 4. CLOSURES WITH ENCLOSED STATE
+println("\n[4] CLOSURES & UPVALUES:");
+fn make_counter(start: int) -> fn {
+    let count = start;
+    fn tick() -> int {
+        count = count + 1;
+        return count;
+    }
+    return tick;
+}
+let counter = make_counter(0);
+println("counter() tick 1:", counter());
+println("counter() tick 2:", counter());
+println("counter() tick 3:", counter());
+
+// 5. STRUCT RECORDS & MUTATION
+println("\n[5] STRUCTS & MUTATION:");
+struct Hero {
+    name: string,
+    health: int,
+    power: float
+}
+let hero = Hero { name: "Knight", health: 100, power: 45.5 };
+println("Initial Hero:", hero.name, "HP:", hero.health, "Power:", hero.power);
+hero.health = hero.health - 20; // Mutate field
+println("Hero took 20 damage! New HP:", hero.health);
+
+// 6. ARRAYS & 2D MATRICES
+println("\n[6] DYNAMIC ARRAYS & 2D MATRICES:");
+let items = ["shield", "sword", "potion"];
+println("Items len:", len(items), "first item:", items[0]);
+push(items, "helmet");
+println("After push('helmet'), len is:", len(items));
+let removed = pop(items);
+println("Popped item:", removed, "| remaining len:", len(items));
+
+let grid = [
+    [10, 20],
+    [30, 40]
+];
+println("Grid[1][0] =", grid[1][0]);
+
+// 7. PATTERN MATCHING WITH GUARDS
+println("\n[7] PATTERN MATCHING WITH GUARDS:");
+let code = 200;
+let is_vip = true;
+let status_msg = match code {
+    200 if is_vip  => "200: VIP Access Granted",
+    200 if !is_vip => "200: Standard Access",
+    404            => "404: Resource Not Found",
+    _              => "Other Status"
+};
+println("Match result:", status_msg);
+
+// 8. MATH LIBRARY
+println("\n[8] STANDARD MATH LIBRARY:");
+println("abs(-75)      =", abs(-75));
+println("sqrt(144.0)   =", sqrt(144.0));
+println("pow(3.0, 3.0) =", pow(3.0, 3.0));
+println("min(25, 9)    =", min(25, 9));
+println("max(25, 9)    =", max(25, 9));
+
+// 9. FILE I/O SUBSYSTEM
+println("\n[9] FILE I/O SUBSYSTEM:");
+let filename = "demo_test_file.txt";
+let write_ok = write_file(filename, "Hello from Fresh File I/O!\nWritten successfully.");
+println("Wrote file?", write_ok);
+println("File exists?", file_exists(filename));
+let read_back = read_file(filename);
+println("File contents:\n" + read_back);
+
+// 10. SYSTEM REFLECTION
+println("\n[10] SYSTEM & REFLECTION:");
+println("Type of hero: ", type(hero));
+println("Type of items:", type(items));
+println("Clock timestamp:", clock());
+
+println("\n================================================================");
+println("      [SUCCESS] ALL FRESH SYNTAX DEMONSTRATIONS COMPLETED!      ");
+println("================================================================");
