@@ -1,9 +1,6 @@
 {
-    "files.associations": {
-        "*.fresh": "rust"
-    },
-    "code-runner.executorMap": {
-        "fresh": "python -m fresh run"
-    },
-    "code-runner.customCommand": "python -m fresh run $fullFileName"
+  "github.copilot.nextEditSuggestions.enabled": true,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
+  "chat.promptFiles": true,
+  "chat.mcp.enabled": true
 }
